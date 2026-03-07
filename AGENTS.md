@@ -35,7 +35,16 @@ Always follow good practices for atomic commits.
 
 ## Component index
 
+- `docs/architecture/api.md`: architecture note for the public token counting entry point in `src/kentokit/api.py`, including responsibilities, request flow, dependencies, and error boundaries.
+- `docs/architecture/providers.md`: architecture note for `src/kentokit/providers/`, covering the provider registry, `ProviderBase`, concrete providers, and the extension path for adding new providers.
+
 ## End-to-end flow (high level)
+
+- Treat `src/kentokit/api.py` as the API gateway for token counting: callers enter through `calc_tokens(...)` with raw text, a model reference, a provider id, and an API key.
+- The API layer resolves the provider implementation from `kentokit.providers.PROVIDER_REGISTRY` and instantiates the matching `ProviderBase` subclass.
+- The provider builds the upstream HTTP request details for its vendor: URL, headers, and JSON payload.
+- `ProviderBase.count_tokens(...)` sends the request, normalizes transport and decoding failures into `TokenCountError`, and hands the parsed JSON body back to the concrete provider.
+- The concrete provider extracts the token count from the vendor-specific response shape and returns a single `int` to the original caller.
 
 ## Overall Coding Principles
 
