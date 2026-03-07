@@ -74,12 +74,12 @@ class XAIProvider(ProviderBase):
         token_ids = data.get("token_ids")
         if token_ids is None:
             token_ids = data.get("tokenIds")
+        if token_ids is None:
+            token_ids = data.get("tokens")
 
-        if not isinstance(token_ids, list) or not all(
-            isinstance(token_id, int) for token_id in token_ids
-        ):
+        if not isinstance(token_ids, list):
             raise TokenCountError(
                 provider_id=self.provider_id,
-                message="expected integer list field 'token_ids'",
+                message="expected list field 'token_ids', 'tokenIds', or 'tokens'",
             )
         return len(token_ids)

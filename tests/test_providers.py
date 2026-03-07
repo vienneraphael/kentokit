@@ -150,6 +150,29 @@ def test_xai_request_shape() -> None:
     assert captured_request.payload == {"model": "grok-4-fast", "text": "hello world"}
 
 
+def test_xai_counts_non_integer_token_arrays() -> None:
+    """xAI token counts should be derived from array length only."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            status_code=200,
+            json={"token_ids": ["hello", "world", "!"]},
+        )
+
+    provider = XAIProvider(api_key="secret")
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+
+    token_count = provider.count_tokens(
+        input_data="hello world",
+        model_ref="grok-4-fast",
+        client=client,
+    )
+
+    client.close()
+
+    assert token_count == 3
+
+
 def _capture_request(*, request: httpx.Request) -> RequestCapture:
     """Convert a request into a comparable structure.
 

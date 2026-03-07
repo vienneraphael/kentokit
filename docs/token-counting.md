@@ -21,6 +21,7 @@ provider HTTP APIs.
 - `input_data` must be a plain `str`
 - the return value is an `int`
 - the abstraction only covers provider token counting/tokenize endpoints
+- xAI token counts are derived from the length of the returned token array
 
 ## Example
 
