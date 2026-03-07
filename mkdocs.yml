@@ -82,3 +82,4 @@ nav:
       - API: architecture/api.md
       - Providers: architecture/providers.md
   - Token Counting: token-counting.md
+  - Provider Input Recap: provider-input-recap.md
