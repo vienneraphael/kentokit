@@ -5,9 +5,14 @@ title: Token Counting
 `kentokit` exposes a small synchronous helper for counting text tokens through
 provider HTTP APIs.
 
-## Public API
-
-::: kentokit.api
+::: kentokit.api.calc_tokens
+    options:
+      separate_signature: true
+      show_root_heading: true
+      show_root_full_path: false
+      show_source: true
+      heading_level: 2
+      docstring_style: numpy
 
 ## Supported Providers
 
@@ -15,13 +20,6 @@ provider HTTP APIs.
 - `anthropic`
 - `gemini`
 - `xai`
-
-## Scope
-
-- `input_data` must be a plain `str`
-- the return value is an `int`
-- the abstraction only covers provider token counting/tokenize endpoints
-- xAI token counts are derived from the length of the returned token array
 
 ## Example
 
@@ -34,4 +32,11 @@ token_count = calc_tokens(
     provider_id="openai",
     api_key="example-api-key",  # pragma: allowlist secret
 )
+print(token_count)
+```
+
+Output:
+
+```text
+15
 ```
