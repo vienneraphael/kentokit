@@ -4,7 +4,6 @@ repo_name: vienneraphael/kentokit
 repo_url: https://github.com/vienneraphael/kentokit
 site_dir: docs-site
 strict: true
-exclude_docs: architecture/**
 
 theme:
   name: material
@@ -79,4 +78,7 @@ extra_javascript:
 
 nav:
   - kentokit: index.md
+  - Architecture:
+      - API: architecture/api.md
+      - Providers: architecture/providers.md
   - Token Counting: token-counting.md
