@@ -2,7 +2,7 @@
 
 import typing as t
 
-from kentokit.providers.base import ProviderBase, ProviderResponseError
+from kentokit.providers.base import ProviderBase, TokenCountError
 
 
 class XAIProvider(ProviderBase):
@@ -78,7 +78,7 @@ class XAIProvider(ProviderBase):
         if not isinstance(token_ids, list) or not all(
             isinstance(token_id, int) for token_id in token_ids
         ):
-            raise ProviderResponseError(
+            raise TokenCountError(
                 provider_id=self.provider_id,
                 message="expected integer list field 'token_ids'",
             )

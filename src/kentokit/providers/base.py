@@ -13,18 +13,6 @@ ProviderId = t.Literal["openai", "anthropic", "gemini", "xai"]
 class TokenCountError(Exception):
     """Base exception for token counting failures."""
 
-
-class UnsupportedProviderError(TokenCountError):
-    """Raised when a provider id is not supported."""
-
-    def __init__(self, *, provider_id: str) -> None:
-        self.provider_id = provider_id
-        super().__init__(f"Unsupported token counting provider: {provider_id}")
-
-
-class ProviderHTTPError(TokenCountError):
-    """Raised when the HTTP request to a provider fails."""
-
     def __init__(
         self,
         *,
@@ -43,18 +31,18 @@ class ProviderHTTPError(TokenCountError):
         if response_text:
             response_fragment = f": {response_text}"
         super().__init__(
-            f"{provider_id} token counting request failed{status_fragment}: "
-            f"{message}{response_fragment}"
+            f"{provider_id} token counting failed{status_fragment}: {message}{response_fragment}"
         )
 
 
-class ProviderResponseError(TokenCountError):
-    """Raised when a provider response cannot be parsed."""
+class UnsupportedProviderError(TokenCountError):
+    """Raised when a provider id is not supported."""
 
-    def __init__(self, *, provider_id: str, message: str) -> None:
-        self.provider_id = provider_id
-        self.message = message
-        super().__init__(f"{provider_id} returned an invalid token count response: {message}")
+    def __init__(self, *, provider_id: str) -> None:
+        super().__init__(
+            provider_id=provider_id,
+            message=f"unsupported provider: {provider_id}",
+        )
 
 
 class ProviderBase(abc.ABC):
@@ -198,24 +186,22 @@ class ProviderBase(abc.ABC):
 
         Raises
         ------
-        ProviderHTTPError
-            If the request fails or returns a non-success status.
-        ProviderResponseError
-            If the response body is not valid JSON.
+        TokenCountError
+            If the request fails or the response cannot be parsed.
         """
 
         try:
             response = client.post(url=url, headers=headers, json=payload)
             response.raise_for_status()
         except httpx.HTTPStatusError as exc:
-            raise ProviderHTTPError(
+            raise TokenCountError(
                 provider_id=self.provider_id,
                 message="provider returned a non-success status",
                 status_code=exc.response.status_code,
                 response_text=exc.response.text,
             ) from exc
         except httpx.HTTPError as exc:
-            raise ProviderHTTPError(
+            raise TokenCountError(
                 provider_id=self.provider_id,
                 message=str(exc),
             ) from exc
@@ -223,13 +209,13 @@ class ProviderBase(abc.ABC):
         try:
             data = response.json()
         except ValueError as exc:
-            raise ProviderResponseError(
+            raise TokenCountError(
                 provider_id=self.provider_id,
                 message="response body is not valid JSON",
             ) from exc
 
         if not isinstance(data, dict):
-            raise ProviderResponseError(
+            raise TokenCountError(
                 provider_id=self.provider_id,
                 message="response body must be a JSON object",
             )

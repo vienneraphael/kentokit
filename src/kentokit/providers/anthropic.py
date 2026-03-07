@@ -2,7 +2,7 @@
 
 import typing as t
 
-from kentokit.providers.base import ProviderBase, ProviderResponseError
+from kentokit.providers.base import ProviderBase, TokenCountError
 
 
 class AnthropicProvider(ProviderBase):
@@ -77,7 +77,7 @@ class AnthropicProvider(ProviderBase):
 
         input_tokens = data.get("input_tokens")
         if not isinstance(input_tokens, int):
-            raise ProviderResponseError(
+            raise TokenCountError(
                 provider_id=self.provider_id,
                 message="expected integer field 'input_tokens'",
             )

@@ -4,8 +4,7 @@ import httpx
 import pytest
 
 from kentokit.providers.base import (
-    ProviderHTTPError,
-    ProviderResponseError,
+    TokenCountError,
 )
 from kentokit.providers.gemini import GeminiProvider
 
@@ -35,7 +34,7 @@ def test_provider_raises_for_non_json_response() -> None:
     provider = GeminiProvider(api_key="secret")
     client = httpx.Client(transport=httpx.MockTransport(handler))
 
-    with pytest.raises(ProviderResponseError, match="not valid JSON"):
+    with pytest.raises(TokenCountError, match="not valid JSON"):
         provider.count_tokens(
             input_data="hello",
             model_ref="gemini-2.0-flash",
@@ -54,7 +53,7 @@ def test_provider_raises_for_missing_count_field() -> None:
     provider = GeminiProvider(api_key="secret")
     client = httpx.Client(transport=httpx.MockTransport(handler))
 
-    with pytest.raises(ProviderResponseError, match="totalTokens"):
+    with pytest.raises(TokenCountError, match="totalTokens"):
         provider.count_tokens(
             input_data="hello",
             model_ref="gemini-2.0-flash",
@@ -73,7 +72,7 @@ def test_provider_raises_for_non_success_status() -> None:
     provider = GeminiProvider(api_key="secret")
     client = httpx.Client(transport=httpx.MockTransport(handler))
 
-    with pytest.raises(ProviderHTTPError, match="status 429"):
+    with pytest.raises(TokenCountError, match="status 429"):
         provider.count_tokens(
             input_data="hello",
             model_ref="gemini-2.0-flash",

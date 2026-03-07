@@ -3,7 +3,7 @@
 import typing as t
 from urllib.parse import quote
 
-from kentokit.providers.base import ProviderBase, ProviderResponseError
+from kentokit.providers.base import ProviderBase, TokenCountError
 
 
 class GeminiProvider(ProviderBase):
@@ -72,7 +72,7 @@ class GeminiProvider(ProviderBase):
 
         total_tokens = data.get("totalTokens")
         if not isinstance(total_tokens, int):
-            raise ProviderResponseError(
+            raise TokenCountError(
                 provider_id=self.provider_id,
                 message="expected integer field 'totalTokens'",
             )
