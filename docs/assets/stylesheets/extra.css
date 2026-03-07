@@ -2,25 +2,25 @@
  * Technical Editorial visual system for MkDocs Material.
  */
 :root {
-  --brand: #6b3f24;
-  --brand-muted: #8b694f;
-  --accent-soft: #a66a45;
-  --accent-hover: #c46f3d;
-  --surface-1: #f8f5f1;
-  --surface-2: #efe8e0;
-  --border: #dccfc2;
-  --link: #5a351e;
-  --code-bg: #f2ece5;
-  --text-main: #1b1612;
-  --text-soft: #5d544b;
-  --shadow-soft: 0 10px 24px rgba(34, 23, 16, 0.08);
+  --brand: #8f3133;
+  --brand-muted: #a75c5b;
+  --accent-soft: #bc4a48;
+  --accent-hover: #d35f5d;
+  --surface-1: #faf3f2;
+  --surface-2: #f2e5e3;
+  --border: #e4d0cd;
+  --link: #742628;
+  --code-bg: #f6ebea;
+  --text-main: #201515;
+  --text-soft: #6b5050;
+  --shadow-soft: 0 10px 24px rgba(43, 18, 18, 0.08);
   --radius: 0.7rem;
-  --hero-glow: radial-gradient(circle at top right, rgba(107, 63, 36, 0.18), transparent 55%);
+  --hero-glow: radial-gradient(circle at top right, rgba(143, 49, 51, 0.18), transparent 55%);
   --docs-readable-width: 88ch;
   --docs-readable-width-desktop: clamp(88ch, 70vw, 120ch);
   --md-primary-fg-color: var(--brand);
-  --md-primary-fg-color--light: #7f4f31;
-  --md-primary-fg-color--dark: #4f2f1a;
+  --md-primary-fg-color--light: #ab4747;
+  --md-primary-fg-color--dark: #6e2325;
   --md-accent-fg-color: var(--brand-muted);
 }
 
@@ -31,30 +31,30 @@
   --md-default-fg-color--light: var(--text-soft);
   --md-typeset-a-color: var(--link);
   --md-code-bg-color: var(--code-bg);
-  --md-typeset-mark-color: rgba(107, 63, 36, 0.15);
+  --md-typeset-mark-color: rgba(143, 49, 51, 0.15);
 }
 
 [data-md-color-scheme="slate"] {
-  --brand: #d5af8f;
-  --brand-muted: #c39a79;
-  --accent-soft: #e3b18c;
-  --accent-hover: #ffd2af;
-  --surface-1: #161311;
-  --surface-2: #1e1916;
-  --border: #3a3028;
-  --link: #f0c8a5;
-  --code-bg: #211b17;
-  --text-main: #f4ece3;
-  --text-soft: #cdbda9;
+  --brand: #dea2a0;
+  --brand-muted: #c98a88;
+  --accent-soft: #f0abaa;
+  --accent-hover: #ffc2c0;
+  --surface-1: #181112;
+  --surface-2: #221718;
+  --border: #433031;
+  --link: #ffc4c1;
+  --code-bg: #26191a;
+  --text-main: #f7ebea;
+  --text-soft: #d5b4b2;
   --shadow-soft: 0 12px 32px rgba(0, 0, 0, 0.38);
-  --hero-glow: radial-gradient(circle at top right, rgba(213, 175, 143, 0.18), transparent 55%);
+  --hero-glow: radial-gradient(circle at top right, rgba(222, 162, 160, 0.18), transparent 55%);
   --md-default-bg-color: var(--surface-1);
-  --md-default-bg-color--light: #1b1613;
+  --md-default-bg-color--light: #1d1415;
   --md-default-fg-color: var(--text-main);
   --md-default-fg-color--light: var(--text-soft);
   --md-typeset-a-color: var(--link);
   --md-code-bg-color: var(--code-bg);
-  --md-typeset-mark-color: rgba(213, 175, 143, 0.22);
+  --md-typeset-mark-color: rgba(222, 162, 160, 0.22);
 }
 
 html {
