@@ -28,4 +28,5 @@ dev = [
     "mkdocstrings[python]>=1.0.3",
     "prek>=0.3.4",
     "pytest>=9.0.2",
+    "python-dotenv>=1.2.2",
 ]
