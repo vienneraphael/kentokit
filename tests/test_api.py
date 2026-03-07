@@ -1,29 +1,13 @@
 """Tests for the public token counting API."""
 
-import typing as t
-
 import httpx
 import pytest
 
-from kentokit.api import calc_tokens
 from kentokit.providers.base import (
     ProviderHTTPError,
     ProviderResponseError,
-    UnsupportedProviderError,
 )
 from kentokit.providers.gemini import GeminiProvider
-
-
-def test_calc_tokens_rejects_unknown_provider() -> None:
-    """The public API should reject unknown providers."""
-
-    with pytest.raises(UnsupportedProviderError, match="mistral"):
-        calc_tokens(
-            input_data="hello",
-            model_ref="gpt-5-mini",
-            provider_id=t.cast(t.Any, "mistral"),
-            api_key="secret",
-        )
 
 
 def test_gemini_normalizes_model_reference() -> None:

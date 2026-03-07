@@ -16,8 +16,6 @@ provider HTTP APIs.
 - `gemini`
 - `xai`
 
-`mistral` is intentionally not supported in this version.
-
 ## Scope
 
 - `input_data` must be a plain `str`
