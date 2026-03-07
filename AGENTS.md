@@ -35,9 +35,7 @@ Always follow good practices for atomic commits.
 
 ## Component index
 
-
 ## End-to-end flow (high level)
-
 
 ## Overall Coding Principles
 
