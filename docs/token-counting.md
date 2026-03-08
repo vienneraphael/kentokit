@@ -14,6 +14,15 @@ provider HTTP APIs.
       heading_level: 2
       docstring_style: numpy
 
+::: kentokit.token_count.TokenCount
+    options:
+      separate_signature: true
+      show_root_heading: true
+      show_root_full_path: false
+      show_source: true
+      heading_level: 2
+      docstring_style: numpy
+
 ## Supported Providers
 
 - `openai`
@@ -24,7 +33,7 @@ provider HTTP APIs.
 ## Example
 
 ```python
-from kentokit import calc_tokens
+from kentokit import TokenCount, calc_tokens
 
 token_count = calc_tokens(
     input_data="Count my tokens.",
@@ -32,7 +41,8 @@ token_count = calc_tokens(
     provider_id="openai",
     api_key="example-api-key",  # pragma: allowlist secret
 )
-print(token_count)
+assert isinstance(token_count, TokenCount)
+print(token_count.total)
 ```
 
 Output:

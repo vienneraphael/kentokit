@@ -6,9 +6,11 @@ from kentokit.providers.base import (
     TokenCountError,
     UnsupportedProviderError,
 )
+from kentokit.token_count import TokenCount
 
 __all__ = [
     "ProviderId",
+    "TokenCount",
     "TokenCountError",
     "UnsupportedProviderError",
     "calc_tokens",

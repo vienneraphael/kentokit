@@ -4,6 +4,7 @@ import typing as t
 
 from kentokit.providers import PROVIDER_REGISTRY
 from kentokit.providers.base import ProviderBase, ProviderId, UnsupportedProviderError
+from kentokit.token_count import TokenCount
 
 
 def calc_tokens(
@@ -12,7 +13,7 @@ def calc_tokens(
     model_ref: str,
     provider_id: ProviderId,
     api_key: str,
-) -> int:
+) -> TokenCount:
     """Calculate the number of input tokens for plain text.
 
     Parameters
@@ -28,8 +29,8 @@ def calc_tokens(
 
     Returns
     -------
-    int
-        Number of input tokens reported by the provider.
+    TokenCount
+        Normalized token count reported by the provider.
 
     Raises
     ------
@@ -41,7 +42,7 @@ def calc_tokens(
 
     provider_class = _get_provider_class(provider_id=provider_id)
     provider = provider_class(api_key=api_key)
-    return provider.count_tokens(input_data=input_data, model_ref=model_ref)
+    return TokenCount(total=provider.count_tokens(input_data=input_data, model_ref=model_ref))
 
 
 def _get_provider_class(*, provider_id: str) -> type[ProviderBase]:
