@@ -40,11 +40,15 @@ Always follow good practices for atomic commits.
 
 ## End-to-end flow (high level)
 
-- Treat `src/kentokit/api.py` as the API gateway for token counting: callers enter through `calc_tokens(...)` with raw text, a model reference, a provider id, and an API key.
-- The API layer resolves the provider implementation from `kentokit.providers.PROVIDER_REGISTRY` and instantiates the matching `ProviderBase` subclass.
-- The provider builds the upstream HTTP request details for its vendor: URL, headers, and JSON payload.
-- `ProviderBase.count_tokens(...)` sends the request, normalizes transport and decoding failures into `TokenCountError`, and hands the parsed JSON body back to the concrete provider.
-- The concrete provider extracts the token count from the vendor-specific response shape and returns a single `int` to the original caller.
+- Treat `src/kentokit/api.py` as the API gateway for token counting: callers enter either through `calc_tokens(...)` or provider-specific helpers such as `TokenCount.from_openai(...)`.
+- The public entrypoint resolves the provider implementation from `kentokit.providers.PROVIDER_REGISTRY` and routes the request to the matching provider adapter.
+- The API layer accepts either a simple raw string input or a provider-native request shape for the selected provider.
+- Before any HTTP request is sent, the provider adapter validates the input into a provider-native typed request model owned by `kentokit`.
+- The validated provider-native request model is serialized into the upstream JSON payload as-is, without first forcing it through a cross-provider lowest-common-denominator schema.
+- The provider adapter builds the upstream request details for its vendor: URL, headers, and JSON payload.
+- The shared provider execution flow sends the request, normalizes transport and decoding failures into `TokenCountError`, and hands the parsed JSON body back to the concrete provider.
+- The concrete provider extracts the vendor-specific count and returns normalized data to the shared layer.
+- The shared layer builds the final `TokenCount` result returned to the caller.
 
 ## Overall Coding Principles
 
