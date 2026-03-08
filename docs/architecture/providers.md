@@ -66,15 +66,24 @@ The shared implementation is intentionally small:
 - `count_tokens(...)` supports an optional `httpx.Client` so tests can inject a client instead of creating a real one.
 - `_post_json(...)` performs the POST request, raises `TokenCountError` for HTTP/network/JSON failures, and requires the decoded body to be a JSON object.
 - `timeout_seconds` is defined once on the base class and used for managed clients.
+- `ProviderBase` remains plain-text oriented; provider-specific typed request models can be layered on top without changing the base class.
 
 ## Provider-specific differences
 
 | Provider | URL strategy | Auth strategy | Payload shape | Count extraction |
 | --- | --- | --- | --- | --- |
-| OpenAI | Fixed `/v1/responses/input_tokens` endpoint | `Authorization: Bearer ...` header | `{"input": ..., "model": ...}` | `input_tokens` integer |
+| OpenAI | Fixed `/v1/responses/input_tokens` endpoint | `Authorization: Bearer ...` header | `{"input": ..., "model": ...}` from either plain-text args or `OpenAICountTokensRequest` | `input_tokens` integer |
 | Anthropic | Fixed `/v1/messages/count_tokens` endpoint | `x-api-key` plus `anthropic-version` header | `messages` array with one user message | `input_tokens` integer |
 | Gemini | Model-specific URL with `:countTokens` suffix | API key in query string | `contents` array with one user part | `totalTokens` integer |
 | xAI | Fixed `/v1/tokenize-text` endpoint | `Authorization: Bearer ...` header | `{"model": ..., "text": ...}` | length of `token_ids`, `tokenIds`, or `tokens` |
+
+## OpenAI request model integration
+
+`OpenAIProvider` is the only provider that currently accepts a typed request object:
+
+- `OpenAICountTokensRequest` validates the OpenAI payload fields and serializes them with `to_payload()`.
+- `OpenAIProvider.count_tokens(...)` preserves the existing `input_data` plus `model_ref` flow and adds an overload-backed `request=` path.
+- The provider still owns the URL, headers, HTTP call, and response parsing. The request model does not own transport behavior.
 
 ## Gemini-specific normalization
 
@@ -88,4 +97,4 @@ To add another provider, the current design expects three changes:
 2. Implement URL, payload, and token-count parsing for that provider.
 3. Register the class in `PROVIDER_REGISTRY` and extend `ProviderId`.
 
-No changes should be required in `src/kentokit/api.py` as long as the registry remains the dispatch boundary.
+No changes should be required in `src/kentokit/api.py` as long as the registry remains the dispatch boundary, unless the new provider also needs a typed request-model overload similar to OpenAI.
