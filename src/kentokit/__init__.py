@@ -1,6 +1,7 @@
 """kentokit public package surface."""
 
 from kentokit.api import calc_tokens
+from kentokit.openai import OpenAICountTokensRequest
 from kentokit.providers.base import (
     ProviderId,
     TokenCountError,
@@ -10,6 +11,7 @@ from kentokit.token_count import TokenCount
 
 __all__ = [
     "ProviderId",
+    "OpenAICountTokensRequest",
     "TokenCount",
     "TokenCountError",
     "UnsupportedProviderError",

@@ -5,7 +5,7 @@ import typing as t
 import httpx
 import pytest
 
-from kentokit import TokenCount, calc_tokens
+from kentokit import OpenAICountTokensRequest, TokenCount, calc_tokens
 from kentokit.providers.base import (
     ProviderBase,
     TokenCountError,
@@ -98,6 +98,96 @@ class DummyProvider(ProviderBase):
         return 42
 
 
+class DummyOpenAIProvider(ProviderBase):
+    """OpenAI-specific provider stub for request-object tests."""
+
+    provider_id = "openai"
+
+    def build_url(self, *, model_ref: str) -> str:
+        """Build a dummy URL.
+
+        Parameters
+        ----------
+        model_ref : str
+            Provider-specific model identifier.
+
+        Returns
+        -------
+        str
+            Dummy URL.
+        """
+
+        del model_ref
+        return "https://example.com"
+
+    def build_payload(self, *, input_data: str, model_ref: str) -> dict[str, str]:
+        """Build a dummy payload.
+
+        Parameters
+        ----------
+        input_data : str
+            Plain text input to count.
+        model_ref : str
+            Provider-specific model identifier.
+
+        Returns
+        -------
+        dict[str, str]
+            Dummy payload.
+        """
+
+        return {"input": input_data, "model": model_ref}
+
+    def parse_token_count(self, *, data: dict[str, t.Any]) -> int:
+        """Parse a dummy token count response.
+
+        Parameters
+        ----------
+        data : dict[str, Any]
+            Dummy response body.
+
+        Returns
+        -------
+        int
+            Parsed token count.
+        """
+
+        del data
+        return 0
+
+    def count_tokens(
+        self,
+        *,
+        input_data: str | None = None,
+        model_ref: str | None = None,
+        client: httpx.Client | None = None,
+        request: OpenAICountTokensRequest | None = None,
+    ) -> int:
+        """Return a stable token count for OpenAI request-object tests.
+
+        Parameters
+        ----------
+        input_data : str | None, default=None
+            Plain text input, unused by the stub.
+        model_ref : str | None, default=None
+            Model reference, unused by the stub.
+        client : httpx.Client | None, default=None
+            Optional HTTP client, unused by the stub.
+        request : OpenAICountTokensRequest | None, default=None
+            Validated OpenAI request payload.
+
+        Returns
+        -------
+        int
+            Stable token count.
+        """
+
+        del client, input_data, model_ref
+        assert request is not None
+        assert request == OpenAICountTokensRequest(model="gpt-5-mini", input="hello")
+        return 21
+
+
 def test_calc_tokens_returns_token_count(monkeypatch: pytest.MonkeyPatch) -> None:
     """The public API should wrap provider counts in TokenCount."""
 
@@ -116,6 +206,39 @@ def test_calc_tokens_returns_token_count(monkeypatch: pytest.MonkeyPatch) -> Non
 
     assert token_count == TokenCount(total=42)
     assert token_count.total == 42
+
+
+def test_calc_tokens_accepts_openai_request(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The public API should route OpenAI request objects to the OpenAI provider."""
+
+    def fake_get_provider_class(*, provider_id: str) -> type[ProviderBase]:
+        del provider_id
+        return DummyOpenAIProvider
+
+    monkeypatch.setattr("kentokit.api._get_provider_class", fake_get_provider_class)
+
+    token_count = calc_tokens(
+        input_data=OpenAICountTokensRequest(model="gpt-5-mini", input="hello"),
+        provider_id="openai",
+        api_key="secret",
+    )
+
+    assert token_count == TokenCount(total=21)
+
+
+def test_calc_tokens_rejects_openai_request_for_other_providers() -> None:
+    """The public API should fail early for incompatible request/provider pairs."""
+
+    calc_tokens_runtime = t.cast(t.Callable[..., TokenCount], calc_tokens)
+
+    with pytest.raises(TypeError, match="provider_id='openai'"):
+        calc_tokens_runtime(
+            input_data=OpenAICountTokensRequest(model="gpt-5-mini", input="hello"),
+            provider_id="anthropic",
+            api_key="secret",
+        )
 
 
 def test_gemini_normalizes_model_reference() -> None:
