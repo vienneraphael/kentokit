@@ -4,7 +4,7 @@ import os
 
 from dotenv import load_dotenv
 
-from kentokit import calc_tokens
+from kentokit import TokenCount
 
 
 def main() -> None:
@@ -15,13 +15,12 @@ def main() -> None:
     if api_key is None:
         raise RuntimeError("Missing OPENAI_API_KEY in the environment or .env file.")
 
-    token_count = calc_tokens(
-        input_data="Count the tokens in this OpenAI example.",
-        model_ref="gpt-5-mini",
-        provider_id="openai",
+    token_count = TokenCount.from_openai(
+        model="gpt-5-mini",
+        input="Count the tokens in this OpenAI example.",
         api_key=api_key,
     )
-    print(f"OpenAI token count: {token_count}")
+    print(f"OpenAI token count: {token_count.total}")
 
 
 if __name__ == "__main__":
