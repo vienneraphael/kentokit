@@ -7,6 +7,7 @@ import typing as t
 
 import httpx
 
+from kentokit.openai import OpenAICountTokensRequest
 from kentokit.providers.anthropic import AnthropicProvider
 from kentokit.providers.gemini import GeminiProvider
 from kentokit.providers.openai import OpenAIProvider
@@ -44,6 +45,35 @@ def test_openai_request_shape() -> None:
     client.close()
 
     assert token_count == 12
+    assert captured_request is not None
+    assert captured_request.method == "POST"
+    assert captured_request.url == "https://api.openai.com/v1/responses/input_tokens"
+    assert captured_request.headers["authorization"] == "Bearer secret"
+    assert captured_request.headers["content-type"] == "application/json"
+    assert captured_request.payload == {"input": "hello world", "model": "gpt-5-mini"}
+
+
+def test_openai_request_object_shape() -> None:
+    """OpenAI provider should accept validated request objects."""
+
+    captured_request: RequestCapture | None = None
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal captured_request
+        captured_request = _capture_request(request=request)
+        return httpx.Response(status_code=200, json={"input_tokens": 13})
+
+    provider = OpenAIProvider(api_key="secret")
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+
+    token_count = provider.count_tokens(
+        request=OpenAICountTokensRequest(model="gpt-5-mini", input="hello world"),
+        client=client,
+    )
+
+    client.close()
+
+    assert token_count == 13
     assert captured_request is not None
     assert captured_request.method == "POST"
     assert captured_request.url == "https://api.openai.com/v1/responses/input_tokens"
