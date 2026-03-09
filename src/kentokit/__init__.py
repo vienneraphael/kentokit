@@ -18,8 +18,3 @@ __all__ = [
     "calc_tokens",
     "main",
 ]
-
-
-def main() -> None:
-    """Run the package entrypoint."""
-    print("Hello from kentokit!")
