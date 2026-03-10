@@ -78,7 +78,7 @@ The shared implementation is intentionally small:
 
 | Provider | URL strategy | Auth strategy | Payload shape | Count extraction |
 | --- | --- | --- | --- | --- |
-| OpenAI | Fixed `/v1/responses/input_tokens` endpoint | `Authorization: Bearer ...` header | `{"input": ..., "model": ...}` from either plain-text args or `OpenAICountTokensRequest` | `input_tokens` integer |
+| OpenAI | Fixed `/v1/responses/input_tokens` endpoint | `Authorization: Bearer ...` header | Plain-text helper sends `{"input": ..., "model": ...}`; typed path accepts a broader Responses-style count payload via `OpenAICountTokensRequest` | `input_tokens` integer |
 | Anthropic | Fixed `/v1/messages/count_tokens` endpoint | `x-api-key` plus `anthropic-version` header | Plain-text helper sends one user message; typed path accepts Anthropic-native `messages` plus optional `system`, `tools`, and `tool_choice` | `input_tokens` integer |
 | Gemini | Model-specific URL with `:countTokens` suffix | API key in query string | Plain-text helper sends one user part; typed path accepts either direct `contents` or full `generateContentRequest` | `totalTokens` integer |
 | xAI | Fixed `/v1/tokenize-text` endpoint | `Authorization: Bearer ...` header | `{"model": ..., "text": ...}` from either plain-text args or `XAICountTokensRequest` | length of `token_ids`, `tokenIds`, or `tokens` |
@@ -89,7 +89,7 @@ The shared implementation is intentionally small:
 - `AnthropicProvider.count_tokens(...)` preserves the existing `input_data` plus `model_ref` flow and adds an overload-backed `request=` path.
 - `GeminiCountTokensRequest` validates Gemini top-level request-form types and serializes snake_case fields into Gemini's expected camelCase payload keys.
 - `GeminiProvider.count_tokens(...)` preserves the existing `input_data` plus `model_ref` flow and adds an overload-backed `request=` path.
-- `OpenAICountTokensRequest` validates the OpenAI payload fields and serializes them with `to_payload()`.
+- `OpenAICountTokensRequest` validates OpenAI top-level count-request fields and serializes them with `to_payload()`.
 - `OpenAIProvider.count_tokens(...)` preserves the existing `input_data` plus `model_ref` flow and adds an overload-backed `request=` path.
 - `XAICountTokensRequest` validates the xAI payload fields and serializes them with `to_payload()`.
 - `XAIProvider.count_tokens(...)` preserves the existing `input_data` plus `model_ref` flow and adds an overload-backed `request=` path.

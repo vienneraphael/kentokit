@@ -121,13 +121,25 @@ from kentokit import OpenAICountTokensRequest, TokenCount, calc_tokens
 
 request = OpenAICountTokensRequest(
     model="gpt-5-mini",
-    input="Count my tokens.",
+    input=[
+        {
+            "role": "user",
+            "content": [{"type": "input_text", "text": "Count my tokens."}],
+        }
+    ],
+    tools=[{"type": "function", "name": "lookup"}],
 )
 
 typed_token_count = TokenCount.from_openai(
     model="gpt-5-mini",
-    input="Count my tokens.",
     api_key="example-api-key",  # pragma: allowlist secret
+    input=[
+        {
+            "role": "user",
+            "content": [{"type": "input_text", "text": "Count my tokens."}],
+        }
+    ],
+    tools=[{"type": "function", "name": "lookup"}],
 )
 
 overloaded_token_count = calc_tokens(
@@ -137,6 +149,29 @@ overloaded_token_count = calc_tokens(
 )
 
 assert typed_token_count.total == overloaded_token_count.total
+```
+
+OpenAI count requests can also reuse conversation state without sending a fresh
+`input` payload:
+
+```python
+from kentokit import OpenAICountTokensRequest, TokenCount
+
+request = OpenAICountTokensRequest(
+    model="gpt-5-mini",
+    previous_response_id="resp_123",
+    conversation="conv_123",
+)
+
+token_count = TokenCount.from_openai(
+    model="gpt-5-mini",
+    api_key="example-api-key",  # pragma: allowlist secret
+    previous_response_id="resp_123",
+    conversation="conv_123",
+)
+
+assert isinstance(request.to_payload(), dict)
+assert token_count.total >= 0
 ```
 
 ## Gemini Typed Request

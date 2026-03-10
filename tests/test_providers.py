@@ -71,7 +71,24 @@ def test_openai_request_object_shape() -> None:
     client = httpx.Client(transport=httpx.MockTransport(handler))
 
     token_count = provider.count_tokens(
-        request=OpenAICountTokensRequest(model="gpt-5-mini", input="hello world"),
+        request=OpenAICountTokensRequest(
+            model="gpt-5-mini",
+            input=[
+                {
+                    "role": "user",
+                    "content": [{"type": "input_text", "text": "hello world"}],
+                }
+            ],
+            conversation="conv_123",
+            instructions="You are terse.",
+            parallel_tool_calls=False,
+            previous_response_id="resp_123",
+            reasoning={"effort": "low"},
+            text={"format": {"type": "text"}},
+            tool_choice="auto",
+            tools=[{"type": "function", "name": "lookup"}],
+            truncation="disabled",
+        ),
         client=client,
     )
 
@@ -83,7 +100,24 @@ def test_openai_request_object_shape() -> None:
     assert captured_request.url == "https://api.openai.com/v1/responses/input_tokens"
     assert captured_request.headers["authorization"] == "Bearer secret"
     assert captured_request.headers["content-type"] == "application/json"
-    assert captured_request.payload == {"input": "hello world", "model": "gpt-5-mini"}
+    assert captured_request.payload == {
+        "conversation": "conv_123",
+        "input": [
+            {
+                "role": "user",
+                "content": [{"type": "input_text", "text": "hello world"}],
+            }
+        ],
+        "instructions": "You are terse.",
+        "model": "gpt-5-mini",
+        "parallel_tool_calls": False,
+        "previous_response_id": "resp_123",
+        "reasoning": {"effort": "low"},
+        "text": {"format": {"type": "text"}},
+        "tool_choice": "auto",
+        "tools": [{"type": "function", "name": "lookup"}],
+        "truncation": "disabled",
+    }
 
 
 def test_anthropic_request_shape() -> None:

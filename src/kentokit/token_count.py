@@ -75,8 +75,17 @@ class TokenCount:
         cls,
         *,
         model: str,
-        input: str,
         api_key: str,
+        input: str | list[dict[str, t.Any]] | None = None,
+        conversation: str | dict[str, t.Any] | None = None,
+        instructions: str | None = None,
+        parallel_tool_calls: bool | None = None,
+        previous_response_id: str | None = None,
+        reasoning: dict[str, t.Any] | None = None,
+        text: dict[str, t.Any] | None = None,
+        tool_choice: str | dict[str, t.Any] | None = None,
+        tools: list[dict[str, t.Any]] | None = None,
+        truncation: t.Literal["auto", "disabled"] | None = None,
     ) -> t.Self:
         """Count OpenAI input tokens from a validated request shape.
 
@@ -84,10 +93,28 @@ class TokenCount:
         ----------
         model : str
             OpenAI model identifier.
-        input : str
-            Input text sent to the OpenAI count-tokens endpoint.
         api_key : str
             OpenAI API key used for the provider transport.
+        input : str | list[dict[str, Any]] | None, default=None
+            Optional Responses-style input sent to the count-tokens endpoint.
+        conversation : str | dict[str, Any] | None, default=None
+            Optional OpenAI conversation state for the count request.
+        instructions : str | None, default=None
+            Optional system or developer instructions applied to the request.
+        parallel_tool_calls : bool | None, default=None
+            Optional OpenAI parallel tool-calling setting.
+        previous_response_id : str | None, default=None
+            Optional prior response id used to continue an OpenAI conversation.
+        reasoning : dict[str, Any] | None, default=None
+            Optional OpenAI reasoning configuration.
+        text : dict[str, Any] | None, default=None
+            Optional OpenAI text output configuration.
+        tool_choice : str | dict[str, Any] | None, default=None
+            Optional OpenAI tool choice configuration.
+        tools : list[dict[str, Any]] | None, default=None
+            Optional OpenAI tool definitions.
+        truncation : Literal["auto", "disabled"] | None, default=None
+            Optional OpenAI truncation mode for the count request.
 
         Returns
         -------
@@ -95,7 +122,19 @@ class TokenCount:
             Normalized token count returned by the OpenAI provider.
         """
 
-        request = OpenAICountTokensRequest(model=model, input=input)
+        request = OpenAICountTokensRequest(
+            model=model,
+            input=input,
+            conversation=conversation,
+            instructions=instructions,
+            parallel_tool_calls=parallel_tool_calls,
+            previous_response_id=previous_response_id,
+            reasoning=reasoning,
+            text=text,
+            tool_choice=tool_choice,
+            tools=tools,
+            truncation=truncation,
+        )
         provider = OpenAIProvider(api_key=api_key)
         total = provider.count_tokens(request=request)
         return cls(total=total)

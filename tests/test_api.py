@@ -191,7 +191,16 @@ class DummyOpenAIProvider(ProviderBase):
 
         del client, input_data, model_ref
         assert request is not None
-        assert request == OpenAICountTokensRequest(model="gpt-5-mini", input="hello")
+        assert request == OpenAICountTokensRequest(
+            model="gpt-5-mini",
+            input=[
+                {
+                    "role": "user",
+                    "content": [{"type": "input_text", "text": "hello"}],
+                }
+            ],
+            previous_response_id="resp_123",
+        )
         return 21
 
 
@@ -506,7 +515,16 @@ def test_calc_tokens_accepts_openai_request(
     monkeypatch.setattr("kentokit.api._get_provider_class", fake_get_provider_class)
 
     token_count = calc_tokens(
-        input_data=OpenAICountTokensRequest(model="gpt-5-mini", input="hello"),
+        input_data=OpenAICountTokensRequest(
+            model="gpt-5-mini",
+            input=[
+                {
+                    "role": "user",
+                    "content": [{"type": "input_text", "text": "hello"}],
+                }
+            ],
+            previous_response_id="resp_123",
+        ),
         provider_id="openai",
         api_key="secret",
     )
@@ -590,7 +608,15 @@ def test_calc_tokens_rejects_openai_request_for_other_providers() -> None:
 
     with pytest.raises(TypeError, match="provider_id='openai'"):
         calc_tokens_runtime(
-            input_data=OpenAICountTokensRequest(model="gpt-5-mini", input="hello"),
+            input_data=OpenAICountTokensRequest(
+                model="gpt-5-mini",
+                input=[
+                    {
+                        "role": "user",
+                        "content": [{"type": "input_text", "text": "hello"}],
+                    }
+                ],
+            ),
             provider_id="anthropic",
             api_key="secret",
         )

@@ -17,7 +17,7 @@ The module exposes one public function and works with four public request models
 - `TokenCount(total: int)`: normalized response model for the public API. It also exposes `TokenCount.from_anthropic(...)`, `TokenCount.from_gemini(...)`, `TokenCount.from_openai(...)`, and `TokenCount.from_xai(...)` for typed provider paths.
 - `AnthropicCountTokensRequest(model: str, messages: list[dict[str, Any]], ...)`: validated Anthropic request model used by the Anthropic-specific typed paths.
 - `GeminiCountTokensRequest(model: str, contents: list[dict[str, Any]] | None, generate_content_request: dict[str, Any] | None)`: validated Gemini request model used by the Gemini-specific typed paths.
-- `OpenAICountTokensRequest(model: str, input: str)`: validated OpenAI request model used by the OpenAI-specific typed paths.
+- `OpenAICountTokensRequest(model: str, input: str | list[dict[str, Any]] | None, ...)`: validated OpenAI Responses-style count request model used by the OpenAI-specific typed paths.
 - `XAICountTokensRequest(model: str, text: str)`: validated xAI request model used by the xAI-specific typed paths.
 
 The module also contains one internal helper:
