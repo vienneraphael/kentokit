@@ -15,6 +15,7 @@ Provider-specific typed request models live alongside it in `src/kentokit/reques
 - `../requests/anthropic.py`: Anthropic typed request model.
 - `../requests/gemini.py`: Gemini typed request model.
 - `../requests/openai.py`: OpenAI typed request model.
+- `../requests/xai.py`: xAI typed request model.
 
 ## Architecture
 
@@ -80,7 +81,7 @@ The shared implementation is intentionally small:
 | OpenAI | Fixed `/v1/responses/input_tokens` endpoint | `Authorization: Bearer ...` header | `{"input": ..., "model": ...}` from either plain-text args or `OpenAICountTokensRequest` | `input_tokens` integer |
 | Anthropic | Fixed `/v1/messages/count_tokens` endpoint | `x-api-key` plus `anthropic-version` header | Plain-text helper sends one user message; typed path accepts Anthropic-native `messages` plus optional `system`, `tools`, and `tool_choice` | `input_tokens` integer |
 | Gemini | Model-specific URL with `:countTokens` suffix | API key in query string | Plain-text helper sends one user part; typed path accepts either direct `contents` or full `generateContentRequest` | `totalTokens` integer |
-| xAI | Fixed `/v1/tokenize-text` endpoint | `Authorization: Bearer ...` header | `{"model": ..., "text": ...}` | length of `token_ids`, `tokenIds`, or `tokens` |
+| xAI | Fixed `/v1/tokenize-text` endpoint | `Authorization: Bearer ...` header | `{"model": ..., "text": ...}` from either plain-text args or `XAICountTokensRequest` | length of `token_ids`, `tokenIds`, or `tokens` |
 
 ## Typed request model integration
 
@@ -90,6 +91,8 @@ The shared implementation is intentionally small:
 - `GeminiProvider.count_tokens(...)` preserves the existing `input_data` plus `model_ref` flow and adds an overload-backed `request=` path.
 - `OpenAICountTokensRequest` validates the OpenAI payload fields and serializes them with `to_payload()`.
 - `OpenAIProvider.count_tokens(...)` preserves the existing `input_data` plus `model_ref` flow and adds an overload-backed `request=` path.
+- `XAICountTokensRequest` validates the xAI payload fields and serializes them with `to_payload()`.
+- `XAIProvider.count_tokens(...)` preserves the existing `input_data` plus `model_ref` flow and adds an overload-backed `request=` path.
 - Typed request models do not own transport behavior; providers still own URLs, headers, HTTP calls, and response parsing.
 
 ## Gemini-specific normalization
@@ -104,4 +107,4 @@ To add another provider, the current design expects three changes:
 2. Implement URL, payload, and token-count parsing for that provider.
 3. Register the class in `PROVIDER_REGISTRY` and extend `ProviderId`.
 
-No changes should be required in `src/kentokit/api.py` as long as the registry remains the dispatch boundary, unless the new provider also needs a typed request-model overload similar to the Anthropic, Gemini, or OpenAI paths.
+No changes should be required in `src/kentokit/api.py` as long as the registry remains the dispatch boundary, unless the new provider also needs a typed request-model overload similar to the Anthropic, Gemini, OpenAI, or xAI paths.
