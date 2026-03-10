@@ -4,8 +4,10 @@ import typing as t
 from dataclasses import dataclass
 
 from kentokit.providers.anthropic import AnthropicProvider
+from kentokit.providers.gemini import GeminiProvider
 from kentokit.providers.openai import OpenAIProvider
 from kentokit.requests.anthropic import AnthropicCountTokensRequest
+from kentokit.requests.gemini import GeminiCountTokensRequest
 from kentokit.requests.openai import OpenAICountTokensRequest
 
 
@@ -93,5 +95,42 @@ class TokenCount:
 
         request = OpenAICountTokensRequest(model=model, input=input)
         provider = OpenAIProvider(api_key=api_key)
+        total = provider.count_tokens(request=request)
+        return cls(total=total)
+
+    @classmethod
+    def from_gemini(
+        cls,
+        *,
+        model: str,
+        api_key: str,
+        contents: list[dict[str, t.Any]] | None = None,
+        generate_content_request: dict[str, t.Any] | None = None,
+    ) -> t.Self:
+        """Count Gemini input tokens from a validated request shape.
+
+        Parameters
+        ----------
+        model : str
+            Gemini model identifier.
+        api_key : str
+            Gemini API key used for the provider transport.
+        contents : list[dict[str, Any]] | None, default=None
+            Optional Gemini contents payload sent directly to ``countTokens``.
+        generate_content_request : dict[str, Any] | None, default=None
+            Optional full Gemini ``generateContentRequest`` payload.
+
+        Returns
+        -------
+        Self
+            Normalized token count returned by the Gemini provider.
+        """
+
+        request = GeminiCountTokensRequest(
+            model=model,
+            contents=contents,
+            generate_content_request=generate_content_request,
+        )
+        provider = GeminiProvider(api_key=api_key)
         total = provider.count_tokens(request=request)
         return cls(total=total)

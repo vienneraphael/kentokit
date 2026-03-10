@@ -13,6 +13,7 @@ from kentokit.providers.gemini import GeminiProvider
 from kentokit.providers.openai import OpenAIProvider
 from kentokit.providers.xai import XAIProvider
 from kentokit.requests.anthropic import AnthropicCountTokensRequest
+from kentokit.requests.gemini import GeminiCountTokensRequest
 from kentokit.requests.openai import OpenAICountTokensRequest
 
 
@@ -208,6 +209,100 @@ def test_gemini_request_shape() -> None:
     assert captured_request.payload == {
         "contents": [{"parts": [{"text": "hello world"}], "role": "user"}]
     }
+
+
+def test_gemini_request_object_accepts_contents() -> None:
+    """Gemini provider should accept validated contents request objects."""
+
+    captured_request: RequestCapture | None = None
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal captured_request
+        captured_request = _capture_request(request=request)
+        return httpx.Response(status_code=200, json={"totalTokens": 8})
+
+    provider = GeminiProvider(api_key="secret")
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+
+    token_count = provider.count_tokens(
+        request=GeminiCountTokensRequest(
+            model="gemini-2.0-flash",
+            contents=[{"role": "user", "parts": [{"text": "hello world"}]}],
+        ),
+        client=client,
+    )
+
+    client.close()
+
+    assert token_count == 8
+    assert captured_request is not None
+    assert captured_request.method == "POST"
+    assert (
+        captured_request.url == "https://generativelanguage.googleapis.com/v1beta/"
+        "models/gemini-2.0-flash:countTokens?key=secret"
+    )
+    assert captured_request.headers["content-type"] == "application/json"
+    assert captured_request.payload == {
+        "contents": [{"role": "user", "parts": [{"text": "hello world"}]}]
+    }
+
+
+def test_gemini_request_object_accepts_generate_content_request() -> None:
+    """Gemini provider should accept full generateContentRequest payloads."""
+
+    captured_request: RequestCapture | None = None
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal captured_request
+        captured_request = _capture_request(request=request)
+        return httpx.Response(status_code=200, json={"totalTokens": 11})
+
+    provider = GeminiProvider(api_key="secret")
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+
+    token_count = provider.count_tokens(
+        request=GeminiCountTokensRequest(
+            model="models/gemini-2.0-flash",
+            generate_content_request={
+                "contents": [{"role": "user", "parts": [{"text": "hello world"}]}],
+                "systemInstruction": {"parts": [{"text": "You are terse."}]},
+            },
+        ),
+        client=client,
+    )
+
+    client.close()
+
+    assert token_count == 11
+    assert captured_request is not None
+    assert captured_request.method == "POST"
+    assert (
+        captured_request.url == "https://generativelanguage.googleapis.com/v1beta/"
+        "models/gemini-2.0-flash:countTokens?key=secret"
+    )
+    assert captured_request.headers["content-type"] == "application/json"
+    assert captured_request.payload == {
+        "generateContentRequest": {
+            "contents": [{"role": "user", "parts": [{"text": "hello world"}]}],
+            "systemInstruction": {"parts": [{"text": "You are terse."}]},
+        }
+    }
+
+
+def test_gemini_request_object_rejects_mixed_arguments() -> None:
+    """Gemini request objects should not be mixed with plain-text arguments."""
+
+    provider = GeminiProvider(api_key="secret")
+    count_tokens_runtime = t.cast(t.Callable[..., int], provider.count_tokens)
+
+    with pytest.raises(TypeError, match="request cannot be combined"):
+        count_tokens_runtime(
+            request=GeminiCountTokensRequest(
+                model="gemini-2.0-flash",
+                contents=[{"role": "user", "parts": [{"text": "hello world"}]}],
+            ),
+            input_data="hello world",
+        )
 
 
 def test_xai_request_shape() -> None:

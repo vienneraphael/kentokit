@@ -7,6 +7,7 @@ import pytest
 
 from kentokit import (
     AnthropicCountTokensRequest,
+    GeminiCountTokensRequest,
     OpenAICountTokensRequest,
     TokenCount,
     calc_tokens,
@@ -289,6 +290,99 @@ class DummyAnthropicProvider(ProviderBase):
         return 22
 
 
+class DummyGeminiProvider(ProviderBase):
+    """Gemini-specific provider stub for request-object tests."""
+
+    provider_id = "gemini"
+
+    def build_url(self, *, model_ref: str) -> str:
+        """Build a dummy URL.
+
+        Parameters
+        ----------
+        model_ref : str
+            Provider-specific model identifier.
+
+        Returns
+        -------
+        str
+            Dummy URL.
+        """
+
+        del model_ref
+        return "https://example.com"
+
+    def build_payload(self, *, input_data: str, model_ref: str) -> dict[str, str]:
+        """Build a dummy payload.
+
+        Parameters
+        ----------
+        input_data : str
+            Plain text input to count.
+        model_ref : str
+            Provider-specific model identifier.
+
+        Returns
+        -------
+        dict[str, str]
+            Dummy payload.
+        """
+
+        return {"input": input_data, "model": model_ref}
+
+    def parse_token_count(self, *, data: dict[str, t.Any]) -> int:
+        """Parse a dummy token count response.
+
+        Parameters
+        ----------
+        data : dict[str, Any]
+            Dummy response body.
+
+        Returns
+        -------
+        int
+            Parsed token count.
+        """
+
+        del data
+        return 0
+
+    def count_tokens(
+        self,
+        *,
+        input_data: str | None = None,
+        model_ref: str | None = None,
+        client: httpx.Client | None = None,
+        request: GeminiCountTokensRequest | None = None,
+    ) -> int:
+        """Return a stable token count for Gemini request-object tests.
+
+        Parameters
+        ----------
+        input_data : str | None, default=None
+            Plain text input, unused by the stub.
+        model_ref : str | None, default=None
+            Model reference, unused by the stub.
+        client : httpx.Client | None, default=None
+            Optional HTTP client, unused by the stub.
+        request : GeminiCountTokensRequest | None, default=None
+            Validated Gemini request payload.
+
+        Returns
+        -------
+        int
+            Stable token count.
+        """
+
+        del client, input_data, model_ref
+        assert request is not None
+        assert request == GeminiCountTokensRequest(
+            model="gemini-2.0-flash",
+            contents=[{"role": "user", "parts": [{"text": "hello"}]}],
+        )
+        return 24
+
+
 def test_calc_tokens_returns_token_count(monkeypatch: pytest.MonkeyPatch) -> None:
     """The public API should wrap provider counts in TokenCount."""
 
@@ -355,6 +449,29 @@ def test_calc_tokens_accepts_anthropic_request(
     assert token_count == TokenCount(total=22)
 
 
+def test_calc_tokens_accepts_gemini_request(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The public API should route Gemini request objects to the provider."""
+
+    def fake_get_provider_class(*, provider_id: str) -> type[ProviderBase]:
+        del provider_id
+        return DummyGeminiProvider
+
+    monkeypatch.setattr("kentokit.api._get_provider_class", fake_get_provider_class)
+
+    token_count = calc_tokens(
+        input_data=GeminiCountTokensRequest(
+            model="gemini-2.0-flash",
+            contents=[{"role": "user", "parts": [{"text": "hello"}]}],
+        ),
+        provider_id="gemini",
+        api_key="secret",
+    )
+
+    assert token_count == TokenCount(total=24)
+
+
 def test_calc_tokens_rejects_openai_request_for_other_providers() -> None:
     """The public API should fail early for incompatible request/provider pairs."""
 
@@ -380,6 +497,39 @@ def test_calc_tokens_rejects_anthropic_request_for_other_providers() -> None:
                 messages=[{"role": "user", "content": "hello"}],
             ),
             provider_id="openai",
+            api_key="secret",
+        )
+
+
+def test_calc_tokens_rejects_gemini_request_for_other_providers() -> None:
+    """The public API should fail early for incompatible request/provider pairs."""
+
+    calc_tokens_runtime = t.cast(t.Callable[..., TokenCount], calc_tokens)
+
+    with pytest.raises(TypeError, match="provider_id='gemini'"):
+        calc_tokens_runtime(
+            input_data=GeminiCountTokensRequest(
+                model="gemini-2.0-flash",
+                contents=[{"role": "user", "parts": [{"text": "hello"}]}],
+            ),
+            provider_id="openai",
+            api_key="secret",
+        )
+
+
+def test_calc_tokens_rejects_model_ref_for_gemini_request() -> None:
+    """The public API should reject model_ref with Gemini request objects."""
+
+    calc_tokens_runtime = t.cast(t.Callable[..., TokenCount], calc_tokens)
+
+    with pytest.raises(TypeError, match="GeminiCountTokensRequest"):
+        calc_tokens_runtime(
+            input_data=GeminiCountTokensRequest(
+                model="gemini-2.0-flash",
+                contents=[{"role": "user", "parts": [{"text": "hello"}]}],
+            ),
+            model_ref="gemini-2.0-flash",
+            provider_id="gemini",
             api_key="secret",
         )
 
