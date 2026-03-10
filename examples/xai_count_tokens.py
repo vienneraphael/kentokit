@@ -4,7 +4,7 @@ import os
 
 from dotenv import load_dotenv
 
-from kentokit import calc_tokens
+from kentokit import TokenCount
 
 
 def main() -> None:
@@ -15,13 +15,12 @@ def main() -> None:
     if api_key is None:
         raise RuntimeError("Missing XAI_API_KEY in the environment or .env file.")
 
-    token_count = calc_tokens(
-        input_data="Count the tokens in this xAI example.",
-        model_ref="grok-4-fast",
-        provider_id="xai",
+    token_count = TokenCount.from_xai(
+        model="grok-4-fast",
+        text="Count the tokens in this xAI example.",
         api_key=api_key,
     )
-    print(f"xAI token count: {token_count}")
+    print(f"xAI token count: {token_count.total}")
 
 
 if __name__ == "__main__":

@@ -4,7 +4,7 @@ import os
 
 from dotenv import load_dotenv
 
-from kentokit import calc_tokens
+from kentokit import TokenCount
 
 
 def main() -> None:
@@ -15,13 +15,17 @@ def main() -> None:
     if api_key is None:
         raise RuntimeError("Missing GEMINI_API_KEY in the environment or .env file.")
 
-    token_count = calc_tokens(
-        input_data="Count the tokens in this Gemini example.",
-        model_ref="gemini-2.0-flash",
-        provider_id="gemini",
+    token_count = TokenCount.from_gemini(
+        model="gemini-2.0-flash",
         api_key=api_key,
+        contents=[
+            {
+                "role": "user",
+                "parts": [{"text": "Count the tokens in this Gemini example."}],
+            }
+        ],
     )
-    print(f"Gemini token count: {token_count}")
+    print(f"Gemini token count: {token_count.total}")
 
 
 if __name__ == "__main__":
