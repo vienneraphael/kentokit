@@ -12,6 +12,7 @@ Provider-specific typed request models live alongside it in `src/kentokit/reques
 - `anthropic.py`: Anthropic implementation.
 - `gemini.py`: Gemini implementation.
 - `xai.py`: xAI implementation.
+- `../requests/anthropic.py`: Anthropic typed request model.
 - `../requests/openai.py`: OpenAI typed request model.
 
 ## Architecture
@@ -76,17 +77,17 @@ The shared implementation is intentionally small:
 | Provider | URL strategy | Auth strategy | Payload shape | Count extraction |
 | --- | --- | --- | --- | --- |
 | OpenAI | Fixed `/v1/responses/input_tokens` endpoint | `Authorization: Bearer ...` header | `{"input": ..., "model": ...}` from either plain-text args or `OpenAICountTokensRequest` | `input_tokens` integer |
-| Anthropic | Fixed `/v1/messages/count_tokens` endpoint | `x-api-key` plus `anthropic-version` header | `messages` array with one user message | `input_tokens` integer |
+| Anthropic | Fixed `/v1/messages/count_tokens` endpoint | `x-api-key` plus `anthropic-version` header | Plain-text helper sends one user message; typed path accepts Anthropic-native `messages` plus optional `system`, `tools`, and `tool_choice` | `input_tokens` integer |
 | Gemini | Model-specific URL with `:countTokens` suffix | API key in query string | `contents` array with one user part | `totalTokens` integer |
 | xAI | Fixed `/v1/tokenize-text` endpoint | `Authorization: Bearer ...` header | `{"model": ..., "text": ...}` | length of `token_ids`, `tokenIds`, or `tokens` |
 
-## OpenAI request model integration
+## Typed request model integration
 
-`OpenAIProvider` is the only provider that currently accepts a typed request object:
-
+- `AnthropicCountTokensRequest` validates Anthropic top-level container types and serializes them with `to_payload()`.
+- `AnthropicProvider.count_tokens(...)` preserves the existing `input_data` plus `model_ref` flow and adds an overload-backed `request=` path.
 - `OpenAICountTokensRequest` validates the OpenAI payload fields and serializes them with `to_payload()`.
 - `OpenAIProvider.count_tokens(...)` preserves the existing `input_data` plus `model_ref` flow and adds an overload-backed `request=` path.
-- The provider still owns the URL, headers, HTTP call, and response parsing. The request model does not own transport behavior.
+- Typed request models do not own transport behavior; providers still own URLs, headers, HTTP calls, and response parsing.
 
 ## Gemini-specific normalization
 
