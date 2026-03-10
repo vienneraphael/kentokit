@@ -2,6 +2,8 @@
 
 `src/kentokit/providers/` contains the provider abstraction, provider registry, and one implementation per supported upstream API. The package isolates all HTTP and response-shape differences behind a shared interface.
 
+Provider-specific typed request models live alongside it in `src/kentokit/requests/`.
+
 ## Package structure
 
 - `base.py`: shared provider contract and common HTTP/error handling.
@@ -10,6 +12,7 @@
 - `anthropic.py`: Anthropic implementation.
 - `gemini.py`: Gemini implementation.
 - `xai.py`: xAI implementation.
+- `../requests/openai.py`: OpenAI typed request model.
 
 ## Architecture
 

@@ -2,10 +2,10 @@
 
 import typing as t
 
-from kentokit.openai import OpenAICountTokensRequest
 from kentokit.providers import PROVIDER_REGISTRY
 from kentokit.providers.base import ProviderBase, ProviderId, UnsupportedProviderError
 from kentokit.providers.openai import OpenAIProvider
+from kentokit.requests.openai import OpenAICountTokensRequest
 from kentokit.token_count import TokenCount
 
 

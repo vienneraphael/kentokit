@@ -6,8 +6,8 @@ import typing as t
 
 import httpx
 
-from kentokit.openai import OpenAICountTokensRequest
 from kentokit.providers.base import ProviderBase, TokenCountError
+from kentokit.requests.openai import OpenAICountTokensRequest
 
 
 class OpenAIProvider(ProviderBase):

@@ -3,8 +3,8 @@
 import typing as t
 from dataclasses import dataclass
 
-from kentokit.openai import OpenAICountTokensRequest
 from kentokit.providers.openai import OpenAIProvider
+from kentokit.requests.openai import OpenAICountTokensRequest
 
 
 @dataclass(frozen=True, slots=True)

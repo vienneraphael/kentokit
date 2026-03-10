@@ -41,7 +41,7 @@ flowchart LR
 
 ## Module dependencies
 
-- `kentokit.openai.OpenAICountTokensRequest`: validated OpenAI request abstraction for the typed OpenAI path.
+- `kentokit.requests.openai.OpenAICountTokensRequest`: validated OpenAI request abstraction for the typed OpenAI path.
 - `kentokit.providers.PROVIDER_REGISTRY`: source of truth for supported providers.
 - `kentokit.providers.base.ProviderBase`: base type returned by the registry.
 - `kentokit.providers.base.ProviderId`: supported provider identifier literal type.

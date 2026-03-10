@@ -23,7 +23,7 @@ provider HTTP APIs.
       heading_level: 2
       docstring_style: numpy
 
-::: kentokit.openai.OpenAICountTokensRequest
+::: kentokit.requests.openai.OpenAICountTokensRequest
     options:
       separate_signature: true
       show_root_heading: true

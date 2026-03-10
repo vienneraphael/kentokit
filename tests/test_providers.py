@@ -7,11 +7,11 @@ import typing as t
 
 import httpx
 
-from kentokit.openai import OpenAICountTokensRequest
 from kentokit.providers.anthropic import AnthropicProvider
 from kentokit.providers.gemini import GeminiProvider
 from kentokit.providers.openai import OpenAIProvider
 from kentokit.providers.xai import XAIProvider
+from kentokit.requests.openai import OpenAICountTokensRequest
 
 
 class RequestCapture(t.NamedTuple):
