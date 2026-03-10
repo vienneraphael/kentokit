@@ -6,10 +6,12 @@ from kentokit.providers.base import (
     TokenCountError,
     UnsupportedProviderError,
 )
+from kentokit.requests.anthropic import AnthropicCountTokensRequest
 from kentokit.requests.openai import OpenAICountTokensRequest
 from kentokit.token_count import TokenCount
 
 __all__ = [
+    "AnthropicCountTokensRequest",
     "ProviderId",
     "OpenAICountTokensRequest",
     "TokenCount",

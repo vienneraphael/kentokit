@@ -3,7 +3,9 @@
 import typing as t
 from dataclasses import dataclass
 
+from kentokit.providers.anthropic import AnthropicProvider
 from kentokit.providers.openai import OpenAIProvider
+from kentokit.requests.anthropic import AnthropicCountTokensRequest
 from kentokit.requests.openai import OpenAICountTokensRequest
 
 
@@ -18,6 +20,51 @@ class TokenCount:
     """
 
     total: int
+
+    @classmethod
+    def from_anthropic(
+        cls,
+        *,
+        model: str,
+        messages: list[dict[str, t.Any]],
+        api_key: str,
+        system: str | list[dict[str, t.Any]] | None = None,
+        tools: list[dict[str, t.Any]] | None = None,
+        tool_choice: dict[str, t.Any] | None = None,
+    ) -> t.Self:
+        """Count Anthropic input tokens from a validated request shape.
+
+        Parameters
+        ----------
+        model : str
+            Anthropic model identifier.
+        messages : list[dict[str, Any]]
+            Anthropic Messages API payload blocks.
+        api_key : str
+            Anthropic API key used for the provider transport.
+        system : str | list[dict[str, Any]] | None, default=None
+            Optional Anthropic system prompt content.
+        tools : list[dict[str, Any]] | None, default=None
+            Optional Anthropic tool definitions.
+        tool_choice : dict[str, Any] | None, default=None
+            Optional Anthropic tool choice configuration.
+
+        Returns
+        -------
+        Self
+            Normalized token count returned by the Anthropic provider.
+        """
+
+        request = AnthropicCountTokensRequest(
+            model=model,
+            messages=messages,
+            system=system,
+            tools=tools,
+            tool_choice=tool_choice,
+        )
+        provider = AnthropicProvider(api_key=api_key)
+        total = provider.count_tokens(request=request)
+        return cls(total=total)
 
     @classmethod
     def from_openai(

@@ -6,11 +6,13 @@ import json
 import typing as t
 
 import httpx
+import pytest
 
 from kentokit.providers.anthropic import AnthropicProvider
 from kentokit.providers.gemini import GeminiProvider
 from kentokit.providers.openai import OpenAIProvider
 from kentokit.providers.xai import XAIProvider
+from kentokit.requests.anthropic import AnthropicCountTokensRequest
 from kentokit.requests.openai import OpenAICountTokensRequest
 
 
@@ -114,6 +116,64 @@ def test_anthropic_request_shape() -> None:
         "messages": [{"content": "hello world", "role": "user"}],
         "model": "claude-sonnet-4-5",
     }
+
+
+def test_anthropic_request_object_shape() -> None:
+    """Anthropic provider should accept validated request objects."""
+
+    captured_request: RequestCapture | None = None
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal captured_request
+        captured_request = _capture_request(request=request)
+        return httpx.Response(status_code=200, json={"input_tokens": 10})
+
+    provider = AnthropicProvider(api_key="secret")
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+
+    token_count = provider.count_tokens(
+        request=AnthropicCountTokensRequest(
+            model="claude-sonnet-4-5",
+            messages=[{"role": "user", "content": "hello world"}],
+            system="You are terse.",
+            tools=[{"name": "lookup", "input_schema": {"type": "object"}}],
+            tool_choice={"type": "auto"},
+        ),
+        client=client,
+    )
+
+    client.close()
+
+    assert token_count == 10
+    assert captured_request is not None
+    assert captured_request.method == "POST"
+    assert captured_request.url == "https://api.anthropic.com/v1/messages/count_tokens"
+    assert captured_request.headers["content-type"] == "application/json"
+    assert captured_request.headers["x-api-key"] == "secret"
+    assert captured_request.headers["anthropic-version"] == "2023-06-01"
+    assert captured_request.payload == {
+        "messages": [{"role": "user", "content": "hello world"}],
+        "model": "claude-sonnet-4-5",
+        "system": "You are terse.",
+        "tools": [{"name": "lookup", "input_schema": {"type": "object"}}],
+        "tool_choice": {"type": "auto"},
+    }
+
+
+def test_anthropic_request_object_rejects_mixed_arguments() -> None:
+    """Anthropic request objects should not be mixed with plain-text arguments."""
+
+    provider = AnthropicProvider(api_key="secret")
+    count_tokens_runtime = t.cast(t.Callable[..., int], provider.count_tokens)
+
+    with pytest.raises(TypeError, match="request cannot be combined"):
+        count_tokens_runtime(
+            request=AnthropicCountTokensRequest(
+                model="claude-sonnet-4-5",
+                messages=[{"role": "user", "content": "hello world"}],
+            ),
+            input_data="hello world",
+        )
 
 
 def test_gemini_request_shape() -> None:
