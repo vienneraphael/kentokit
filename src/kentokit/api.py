@@ -7,9 +7,11 @@ from kentokit.providers.anthropic import AnthropicProvider
 from kentokit.providers.base import ProviderBase, ProviderId, UnsupportedProviderError
 from kentokit.providers.gemini import GeminiProvider
 from kentokit.providers.openai import OpenAIProvider
+from kentokit.providers.xai import XAIProvider
 from kentokit.requests.anthropic import AnthropicCountTokensRequest
 from kentokit.requests.gemini import GeminiCountTokensRequest
 from kentokit.requests.openai import OpenAICountTokensRequest
+from kentokit.requests.xai import XAICountTokensRequest
 from kentokit.token_count import TokenCount
 
 
@@ -46,6 +48,16 @@ def calc_tokens(
 @t.overload
 def calc_tokens(
     *,
+    input_data: XAICountTokensRequest,
+    provider_id: t.Literal["xai"],
+    api_key: str,
+    model_ref: None = None,
+) -> TokenCount: ...
+
+
+@t.overload
+def calc_tokens(
+    *,
     input_data: str,
     model_ref: str,
     provider_id: ProviderId,
@@ -56,7 +68,11 @@ def calc_tokens(
 def calc_tokens(
     *,
     input_data: (
-        str | AnthropicCountTokensRequest | GeminiCountTokensRequest | OpenAICountTokensRequest
+        str
+        | AnthropicCountTokensRequest
+        | GeminiCountTokensRequest
+        | OpenAICountTokensRequest
+        | XAICountTokensRequest
     ),
     model_ref: str | None = None,
     provider_id: ProviderId,
@@ -66,9 +82,9 @@ def calc_tokens(
 
     Parameters
     ----------
-    input_data : str | AnthropicCountTokensRequest | GeminiCountTokensRequest | OpenAICountTokensRequest
+    input_data : str | AnthropicCountTokensRequest | GeminiCountTokensRequest | OpenAICountTokensRequest | XAICountTokensRequest
         Plain text input for any provider, or a validated provider-native request
-        payload for Anthropic, Gemini, or OpenAI when ``provider_id`` matches
+        payload for Anthropic, Gemini, OpenAI, or xAI when ``provider_id`` matches
         that request type.
     model_ref : str | None, default=None
         Provider-specific model identifier for plain-text requests. Omit when
@@ -135,6 +151,21 @@ def calc_tokens(
 
         provider_class = t.cast(
             type[GeminiProvider],
+            _get_provider_class(provider_id=provider_id),
+        )
+        provider = provider_class(api_key=api_key)
+        return TokenCount(total=provider.count_tokens(request=input_data))
+
+    if isinstance(input_data, XAICountTokensRequest):
+        if provider_id != "xai":
+            raise TypeError("XAICountTokensRequest is only supported when provider_id='xai'")
+        if model_ref is not None:
+            raise TypeError(
+                "model_ref cannot be provided when input_data is a XAICountTokensRequest"
+            )
+
+        provider_class = t.cast(
+            type[XAIProvider],
             _get_provider_class(provider_id=provider_id),
         )
         provider = provider_class(api_key=api_key)

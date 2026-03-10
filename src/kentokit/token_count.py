@@ -6,9 +6,11 @@ from dataclasses import dataclass
 from kentokit.providers.anthropic import AnthropicProvider
 from kentokit.providers.gemini import GeminiProvider
 from kentokit.providers.openai import OpenAIProvider
+from kentokit.providers.xai import XAIProvider
 from kentokit.requests.anthropic import AnthropicCountTokensRequest
 from kentokit.requests.gemini import GeminiCountTokensRequest
 from kentokit.requests.openai import OpenAICountTokensRequest
+from kentokit.requests.xai import XAICountTokensRequest
 
 
 @dataclass(frozen=True, slots=True)
@@ -132,5 +134,35 @@ class TokenCount:
             generate_content_request=generate_content_request,
         )
         provider = GeminiProvider(api_key=api_key)
+        total = provider.count_tokens(request=request)
+        return cls(total=total)
+
+    @classmethod
+    def from_xai(
+        cls,
+        *,
+        model: str,
+        text: str,
+        api_key: str,
+    ) -> t.Self:
+        """Count xAI input tokens from a validated request shape.
+
+        Parameters
+        ----------
+        model : str
+            xAI model identifier.
+        text : str
+            Input text sent to the xAI tokenization endpoint.
+        api_key : str
+            xAI API key used for the provider transport.
+
+        Returns
+        -------
+        Self
+            Normalized token count returned by the xAI provider.
+        """
+
+        request = XAICountTokensRequest(model=model, text=text)
+        provider = XAIProvider(api_key=api_key)
         total = provider.count_tokens(request=request)
         return cls(total=total)

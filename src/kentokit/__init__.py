@@ -9,6 +9,7 @@ from kentokit.providers.base import (
 from kentokit.requests.anthropic import AnthropicCountTokensRequest
 from kentokit.requests.gemini import GeminiCountTokensRequest
 from kentokit.requests.openai import OpenAICountTokensRequest
+from kentokit.requests.xai import XAICountTokensRequest
 from kentokit.token_count import TokenCount
 
 __all__ = [
@@ -19,6 +20,7 @@ __all__ = [
     "TokenCount",
     "TokenCountError",
     "UnsupportedProviderError",
+    "XAICountTokensRequest",
     "calc_tokens",
     "main",
 ]

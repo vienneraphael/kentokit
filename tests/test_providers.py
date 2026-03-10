@@ -15,6 +15,7 @@ from kentokit.providers.xai import XAIProvider
 from kentokit.requests.anthropic import AnthropicCountTokensRequest
 from kentokit.requests.gemini import GeminiCountTokensRequest
 from kentokit.requests.openai import OpenAICountTokensRequest
+from kentokit.requests.xai import XAICountTokensRequest
 
 
 class RequestCapture(t.NamedTuple):
@@ -333,6 +334,54 @@ def test_xai_request_shape() -> None:
     assert captured_request.headers["authorization"] == "Bearer secret"
     assert captured_request.headers["content-type"] == "application/json"
     assert captured_request.payload == {"model": "grok-4-fast", "text": "hello world"}
+
+
+def test_xai_request_object_shape() -> None:
+    """xAI provider should send the expected request payload from request objects."""
+
+    captured_request: RequestCapture | None = None
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal captured_request
+        captured_request = _capture_request(request=request)
+        return httpx.Response(status_code=200, json={"token_ids": [1, 2, 3, 4]})
+
+    provider = XAIProvider(api_key="secret")
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+
+    token_count = provider.count_tokens(
+        request=XAICountTokensRequest(
+            model="grok-4-fast",
+            text="hello world",
+        ),
+        client=client,
+    )
+
+    client.close()
+
+    assert token_count == 4
+    assert captured_request is not None
+    assert captured_request.method == "POST"
+    assert captured_request.url == "https://api.x.ai/v1/tokenize-text"
+    assert captured_request.headers["authorization"] == "Bearer secret"
+    assert captured_request.headers["content-type"] == "application/json"
+    assert captured_request.payload == {"model": "grok-4-fast", "text": "hello world"}
+
+
+def test_xai_request_object_rejects_mixed_arguments() -> None:
+    """xAI request objects should not be mixed with plain-text arguments."""
+
+    provider = XAIProvider(api_key="secret")
+    count_tokens_runtime = t.cast(t.Callable[..., int], provider.count_tokens)
+
+    with pytest.raises(TypeError, match="request cannot be combined"):
+        count_tokens_runtime(
+            request=XAICountTokensRequest(
+                model="grok-4-fast",
+                text="hello world",
+            ),
+            input_data="hello world",
+        )
 
 
 def test_xai_counts_non_integer_token_arrays() -> None:
