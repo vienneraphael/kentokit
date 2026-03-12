@@ -8,6 +8,7 @@ import pytest
 from kentokit import (
     AnthropicCountTokensRequest,
     GeminiCountTokensRequest,
+    GeminiModality,
     OpenAICountTokensRequest,
     TokenCount,
     XAICountTokensRequest,
@@ -392,6 +393,38 @@ class DummyGeminiProvider(ProviderBase):
         )
         return 24
 
+    def count_token_count(
+        self,
+        *,
+        input_data: str | None = None,
+        model_ref: str | None = None,
+        client: httpx.Client | None = None,
+        request: GeminiCountTokensRequest | None = None,
+    ) -> TokenCount:
+        """Return Gemini metadata for public API tests."""
+
+        del client
+        if request is not None:
+            assert input_data is None
+            assert model_ref is None
+            assert request == GeminiCountTokensRequest(
+                model="gemini-2.0-flash",
+                contents=[{"role": "user", "parts": [{"text": "hello"}]}],
+            )
+        else:
+            assert input_data == "hello"
+            assert model_ref == "gemini-2.0-flash"
+        return TokenCount(
+            total=24,
+            cached_tokens=6,
+            token_details=[
+                {"modality": GeminiModality.TEXT, "tokenCount": 18},
+            ],
+            cache_token_details=[
+                {"modality": GeminiModality.TEXT, "tokenCount": 6},
+            ],
+        )
+
 
 class DummyXAIProvider(ProviderBase):
     """xAI-specific provider stub for request-object tests."""
@@ -501,6 +534,9 @@ def test_calc_tokens_returns_token_count(monkeypatch: pytest.MonkeyPatch) -> Non
 
     assert token_count == TokenCount(total=42)
     assert token_count.total == 42
+    assert token_count.cached_tokens is None
+    assert token_count.token_details is None
+    assert token_count.cache_token_details is None
 
 
 def test_calc_tokens_accepts_openai_request(
@@ -578,7 +614,46 @@ def test_calc_tokens_accepts_gemini_request(
         api_key="secret",
     )
 
-    assert token_count == TokenCount(total=24)
+    assert token_count == TokenCount(
+        total=24,
+        cached_tokens=6,
+        token_details=[
+            {"modality": GeminiModality.TEXT, "tokenCount": 18},
+        ],
+        cache_token_details=[
+            {"modality": GeminiModality.TEXT, "tokenCount": 6},
+        ],
+    )
+
+
+def test_calc_tokens_returns_full_gemini_token_count(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The public API should return Gemini metadata for plain text input."""
+
+    def fake_get_provider_class(*, provider_id: str) -> type[ProviderBase]:
+        del provider_id
+        return DummyGeminiProvider
+
+    monkeypatch.setattr("kentokit.api._get_provider_class", fake_get_provider_class)
+
+    token_count = calc_tokens(
+        input_data="hello",
+        model_ref="gemini-2.0-flash",
+        provider_id="gemini",
+        api_key="secret",
+    )
+
+    assert token_count == TokenCount(
+        total=24,
+        cached_tokens=6,
+        token_details=[
+            {"modality": GeminiModality.TEXT, "tokenCount": 18},
+        ],
+        cache_token_details=[
+            {"modality": GeminiModality.TEXT, "tokenCount": 6},
+        ],
+    )
 
 
 def test_calc_tokens_accepts_xai_request(

@@ -154,7 +154,7 @@ def calc_tokens(
             _get_provider_class(provider_id=provider_id),
         )
         provider = provider_class(api_key=api_key)
-        return TokenCount(total=provider.count_tokens(request=input_data))
+        return provider.count_token_count(request=input_data)
 
     if isinstance(input_data, XAICountTokensRequest):
         if provider_id != "xai":
@@ -173,6 +173,14 @@ def calc_tokens(
 
     if model_ref is None:
         raise TypeError("model_ref must be provided when input_data is a string")
+
+    if provider_id == "gemini":
+        provider_class = t.cast(
+            type[GeminiProvider],
+            _get_provider_class(provider_id=provider_id),
+        )
+        provider = provider_class(api_key=api_key)
+        return provider.count_token_count(input_data=input_data, model_ref=model_ref)
 
     provider_class = _get_provider_class(provider_id=provider_id)
     provider = provider_class(api_key=api_key)

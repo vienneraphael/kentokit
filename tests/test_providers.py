@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import json
+import re
 import typing as t
 
 import httpx
 import pytest
 
+from kentokit import GeminiModality, TokenCount
 from kentokit.providers.anthropic import AnthropicProvider
+from kentokit.providers.base import TokenCountError
 from kentokit.providers.gemini import GeminiProvider
 from kentokit.providers.openai import OpenAIProvider
 from kentokit.providers.xai import XAIProvider
@@ -324,6 +327,50 @@ def test_gemini_request_object_accepts_generate_content_request() -> None:
     }
 
 
+def test_gemini_count_token_count_returns_full_metadata() -> None:
+    """Gemini should parse the full countTokens response into TokenCount."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        del request
+        return httpx.Response(
+            status_code=200,
+            json={
+                "totalTokens": 17,
+                "cachedContentTokenCount": 5,
+                "promptTokensDetails": [
+                    {"modality": "TEXT", "tokenCount": 12},
+                    {"modality": "IMAGE", "tokenCount": 5},
+                ],
+                "cacheTokensDetails": [
+                    {"modality": "TEXT", "tokenCount": 5},
+                ],
+            },
+        )
+
+    provider = GeminiProvider(api_key="secret")
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+
+    token_count = provider.count_token_count(
+        input_data="hello world",
+        model_ref="gemini-2.0-flash",
+        client=client,
+    )
+
+    client.close()
+
+    assert token_count == TokenCount(
+        total=17,
+        cached_tokens=5,
+        token_details=[
+            {"modality": GeminiModality.TEXT, "tokenCount": 12},
+            {"modality": GeminiModality.IMAGE, "tokenCount": 5},
+        ],
+        cache_token_details=[
+            {"modality": GeminiModality.TEXT, "tokenCount": 5},
+        ],
+    )
+
+
 def test_gemini_request_object_rejects_mixed_arguments() -> None:
     """Gemini request objects should not be mixed with plain-text arguments."""
 
@@ -338,6 +385,70 @@ def test_gemini_request_object_rejects_mixed_arguments() -> None:
             ),
             input_data="hello world",
         )
+
+
+@pytest.mark.parametrize(
+    ("response_json", "message"),
+    [
+        ({}, "totalTokens"),
+        ({"totalTokens": "7"}, "totalTokens"),
+        (
+            {"totalTokens": 7, "cachedContentTokenCount": "5"},
+            "cachedContentTokenCount",
+        ),
+        (
+            {"totalTokens": 7, "promptTokensDetails": "bad"},
+            "promptTokensDetails",
+        ),
+        (
+            {"totalTokens": 7, "cacheTokensDetails": "bad"},
+            "cacheTokensDetails",
+        ),
+        (
+            {"totalTokens": 7, "promptTokensDetails": ["bad"]},
+            "promptTokensDetails[0]",
+        ),
+        (
+            {"totalTokens": 7, "promptTokensDetails": [{}]},
+            "promptTokensDetails[0].modality",
+        ),
+        (
+            {
+                "totalTokens": 7,
+                "promptTokensDetails": [{"modality": "NOT_A_MODALITY", "tokenCount": 3}],
+            },
+            "promptTokensDetails[0].modality",
+        ),
+        (
+            {
+                "totalTokens": 7,
+                "promptTokensDetails": [{"modality": "TEXT"}],
+            },
+            "promptTokensDetails[0].tokenCount",
+        ),
+    ],
+)
+def test_gemini_count_token_count_rejects_invalid_metadata(
+    response_json: dict[str, t.Any],
+    message: str,
+) -> None:
+    """Gemini should validate the full metadata response shape."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        del request
+        return httpx.Response(status_code=200, json=response_json)
+
+    provider = GeminiProvider(api_key="secret")
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+
+    with pytest.raises(TokenCountError, match=re.escape(message)):
+        provider.count_token_count(
+            input_data="hello world",
+            model_ref="gemini-2.0-flash",
+            client=client,
+        )
+
+    client.close()
 
 
 def test_xai_request_shape() -> None:

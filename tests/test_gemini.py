@@ -5,7 +5,7 @@ import typing as t
 import httpx
 import pytest
 
-from kentokit import GeminiCountTokensRequest, TokenCount
+from kentokit import GeminiCountTokensRequest, GeminiModality, TokenCount
 from kentokit.providers.gemini import GeminiProvider
 
 
@@ -105,23 +105,32 @@ def test_token_count_from_gemini_uses_request_model(
 ) -> None:
     """The classmethod should route a validated request through GeminiProvider."""
 
-    def fake_count_tokens(
+    def fake_count_token_count(
         self: GeminiProvider,
         *,
         request: GeminiCountTokensRequest,
         client: httpx.Client | None = None,
         input_data: str | None = None,
         model_ref: str | None = None,
-    ) -> int:
+    ) -> TokenCount:
         del client, input_data, model_ref
         assert self.api_key == "secret"
         assert request == GeminiCountTokensRequest(
             model="gemini-2.0-flash",
             contents=[{"role": "user", "parts": [{"text": "hello"}]}],
         )
-        return 17
+        return TokenCount(
+            total=17,
+            cached_tokens=5,
+            token_details=[
+                {"modality": GeminiModality.TEXT, "tokenCount": 12},
+            ],
+            cache_token_details=[
+                {"modality": GeminiModality.TEXT, "tokenCount": 5},
+            ],
+        )
 
-    monkeypatch.setattr(GeminiProvider, "count_tokens", fake_count_tokens)
+    monkeypatch.setattr(GeminiProvider, "count_token_count", fake_count_token_count)
 
     token_count = TokenCount.from_gemini(
         model="gemini-2.0-flash",
@@ -129,4 +138,13 @@ def test_token_count_from_gemini_uses_request_model(
         contents=[{"role": "user", "parts": [{"text": "hello"}]}],
     )
 
-    assert token_count == TokenCount(total=17)
+    assert token_count == TokenCount(
+        total=17,
+        cached_tokens=5,
+        token_details=[
+            {"modality": GeminiModality.TEXT, "tokenCount": 12},
+        ],
+        cache_token_details=[
+            {"modality": GeminiModality.TEXT, "tokenCount": 5},
+        ],
+    )
