@@ -23,6 +23,15 @@ provider HTTP APIs.
       heading_level: 2
       docstring_style: numpy
 
+::: kentokit.modalities.GeminiModality
+    options:
+      separate_signature: true
+      show_root_heading: true
+      show_root_full_path: false
+      show_source: true
+      heading_level: 2
+      docstring_style: numpy
+
 ::: kentokit.requests.anthropic.AnthropicCountTokensRequest
     options:
       separate_signature: true
@@ -112,6 +121,38 @@ overloaded_token_count = calc_tokens(
 )
 
 assert typed_token_count.total == overloaded_token_count.total
+```
+
+Gemini responses can also populate Gemini-specific metadata on `TokenCount`:
+
+- `cached_tokens`: cached-token total returned by Gemini, when present
+- `token_details`: prompt-side modality breakdown
+- `cache_token_details`: cache-side modality breakdown
+
+Each breakdown item is a dictionary with:
+
+- `modality`: a `GeminiModality` value
+- `tokenCount`: the integer count for that modality
+
+Example:
+
+```python
+from kentokit import GeminiModality, TokenCount
+
+token_count = TokenCount(
+    total=17,
+    cached_tokens=5,
+    token_details=[
+        {"modality": GeminiModality.TEXT, "tokenCount": 12},
+        {"modality": GeminiModality.IMAGE, "tokenCount": 5},
+    ],
+    cache_token_details=[
+        {"modality": GeminiModality.TEXT, "tokenCount": 5},
+    ],
+)
+
+assert token_count.cached_tokens == 5
+assert token_count.token_details[0]["modality"] == GeminiModality.TEXT
 ```
 
 ## OpenAI Typed Request
