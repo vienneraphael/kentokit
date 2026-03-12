@@ -21,9 +21,18 @@ class TokenCount:
     ----------
     total : int
         Total token count reported by the provider.
+    cached_tokens : int | None, default=None
+        Gemini cached token count when the provider returns it.
+    token_details : list[dict[str, Any]] | None, default=None
+        Gemini modality breakdown for prompt-side tokens.
+    cache_token_details : list[dict[str, Any]] | None, default=None
+        Gemini modality breakdown for cached tokens.
     """
 
     total: int
+    cached_tokens: int | None = None
+    token_details: list[dict[str, t.Any]] | None = None
+    cache_token_details: list[dict[str, t.Any]] | None = None
 
     @classmethod
     def from_anthropic(
@@ -173,8 +182,13 @@ class TokenCount:
             generate_content_request=generate_content_request,
         )
         provider = GeminiProvider(api_key=api_key)
-        total = provider.count_tokens(request=request)
-        return cls(total=total)
+        token_count = provider.count_token_count(request=request)
+        return cls(
+            total=token_count.total,
+            cached_tokens=token_count.cached_tokens,
+            token_details=token_count.token_details,
+            cache_token_details=token_count.cache_token_details,
+        )
 
     @classmethod
     def from_xai(

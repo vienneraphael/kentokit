@@ -1,6 +1,7 @@
 """kentokit public package surface."""
 
 from kentokit.api import calc_tokens
+from kentokit.modalities import GeminiModality
 from kentokit.providers.base import (
     ProviderId,
     TokenCountError,
@@ -15,6 +16,7 @@ from kentokit.token_count import TokenCount
 __all__ = [
     "AnthropicCountTokensRequest",
     "GeminiCountTokensRequest",
+    "GeminiModality",
     "ProviderId",
     "OpenAICountTokensRequest",
     "TokenCount",
