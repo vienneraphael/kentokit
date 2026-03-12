@@ -10,9 +10,11 @@ Provider-specific typed request models live alongside it in `src/kentokit/reques
 - `__init__.py`: registry mapping provider ids to concrete provider classes.
 - `openai.py`: OpenAI implementation.
 - `anthropic.py`: Anthropic implementation.
+- `bedrock.py`: Amazon Bedrock implementation.
 - `gemini.py`: Gemini implementation.
 - `xai.py`: xAI implementation.
 - `../requests/anthropic.py`: Anthropic typed request model.
+- `../requests/bedrock.py`: Bedrock typed request model.
 - `../requests/gemini.py`: Gemini typed request model.
 - `../requests/openai.py`: OpenAI typed request model.
 - `../requests/xai.py`: xAI typed request model.
@@ -23,12 +25,14 @@ Provider-specific typed request models live alongside it in `src/kentokit/reques
 flowchart TD
     A["PROVIDER_REGISTRY"] --> B["OpenAIProvider"]
     A --> C["AnthropicProvider"]
-    A --> D["GeminiProvider"]
-    A --> E["XAIProvider"]
+    A --> D["BedrockProvider"]
+    A --> E["GeminiProvider"]
+    A --> I["XAIProvider"]
     B --> F["ProviderBase"]
     C --> F
     D --> F
     E --> F
+    I --> F
     F --> G["_post_json(...)"]
     G --> H["TokenCountError / parsed JSON"]
 ```
@@ -72,21 +76,24 @@ The shared implementation is intentionally small:
 - `count_tokens(...)` supports an optional `httpx.Client` so tests can inject a client instead of creating a real one.
 - `_post_json(...)` performs the POST request, raises `TokenCountError` for HTTP/network/JSON failures, and requires the decoded body to be a JSON object.
 - `timeout_seconds` is defined once on the base class and used for managed clients.
-- `ProviderBase` remains plain-text oriented; provider-specific typed request models can be layered on top without changing the base class.
+- `ProviderBase` remains plain-text oriented; provider-specific typed request models can be layered on top without changing the base class, and Bedrock opts out of the plain-text path at the subclass level.
 
 ## Provider-specific differences
 
 | Provider | URL strategy | Auth strategy | Payload shape | Count extraction |
 | --- | --- | --- | --- | --- |
-| OpenAI | Fixed `/v1/responses/input_tokens` endpoint | `Authorization: Bearer ...` header | Plain-text helper sends `{"input": ..., "model": ...}`; typed path accepts a broader Responses-style count payload via `OpenAICountTokensRequest` | `input_tokens` integer |
 | Anthropic | Fixed `/v1/messages/count_tokens` endpoint | `x-api-key` plus `anthropic-version` header | Plain-text helper sends one user message; typed path accepts Anthropic-native `messages` plus optional `system`, `tools`, and `tool_choice` | `input_tokens` integer |
+| Bedrock | Regional Runtime endpoint with model-specific `/count-tokens` path | `Authorization: Bearer ...` header | Typed path only through `BedrockCountTokensRequest`, which wraps either a `converse` request or an `invokeModel.body` JSON string | `inputTokens` integer |
 | Gemini | Model-specific URL with `:countTokens` suffix | API key in query string | Plain-text helper sends one user part; typed path accepts either direct `contents` or full `generateContentRequest` | `totalTokens` integer |
+| OpenAI | Fixed `/v1/responses/input_tokens` endpoint | `Authorization: Bearer ...` header | Plain-text helper sends `{"input": ..., "model": ...}`; typed path accepts a broader Responses-style count payload via `OpenAICountTokensRequest` | `input_tokens` integer |
 | xAI | Fixed `/v1/tokenize-text` endpoint | `Authorization: Bearer ...` header | `{"model": ..., "text": ...}` from either plain-text args or `XAICountTokensRequest` | length of `token_ids`, `tokenIds`, or `tokens` |
 
 ## Typed request model integration
 
 - `AnthropicCountTokensRequest` validates Anthropic top-level container types and serializes them with `to_payload()`.
 - `AnthropicProvider.count_tokens(...)` preserves the existing `input_data` plus `model_ref` flow and adds an overload-backed `request=` path.
+- `BedrockCountTokensRequest` validates the top-level Bedrock count-token union and serializes either the `converse` form or the `invokeModel.body` form with minimal nested-shape validation.
+- `BedrockProvider.count_tokens(...)` is request-object-only because Bedrock token counting requires a provider-native request shape rather than a generic raw string.
 - `GeminiCountTokensRequest` validates Gemini top-level request-form types and serializes snake_case fields into Gemini's expected camelCase payload keys.
 - `GeminiProvider.count_tokens(...)` preserves the existing `input_data` plus `model_ref` flow and adds an overload-backed `request=` path.
 - `OpenAICountTokensRequest` validates OpenAI top-level count-request fields and serializes them with `to_payload()`.
@@ -107,4 +114,4 @@ To add another provider, the current design expects three changes:
 2. Implement URL, payload, and token-count parsing for that provider.
 3. Register the class in `PROVIDER_REGISTRY` and extend `ProviderId`.
 
-No changes should be required in `src/kentokit/api.py` as long as the registry remains the dispatch boundary, unless the new provider also needs a typed request-model overload similar to the Anthropic, Gemini, OpenAI, or xAI paths.
+No changes should be required in `src/kentokit/api.py` as long as the registry remains the dispatch boundary, unless the new provider also needs a typed request-model overload similar to the Anthropic, Bedrock, Gemini, OpenAI, or xAI paths.

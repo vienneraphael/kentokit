@@ -41,6 +41,15 @@ provider HTTP APIs.
       heading_level: 2
       docstring_style: numpy
 
+::: kentokit.requests.bedrock.BedrockCountTokensRequest
+    options:
+      separate_signature: true
+      show_root_heading: true
+      show_root_full_path: false
+      show_source: true
+      heading_level: 2
+      docstring_style: numpy
+
 ::: kentokit.requests.openai.OpenAICountTokensRequest
     options:
       separate_signature: true
@@ -72,6 +81,7 @@ provider HTTP APIs.
 
 - `openai`
 - `anthropic`
+- `bedrock`
 - `gemini`
 - `xai`
 
@@ -117,6 +127,52 @@ typed_token_count = TokenCount.from_anthropic(
 overloaded_token_count = calc_tokens(
     input_data=request,
     provider_id="anthropic",
+    api_key="example-api-key",  # pragma: allowlist secret
+)
+
+assert typed_token_count.total == overloaded_token_count.total
+```
+
+## Bedrock Typed Request
+
+Bedrock is supported through `BedrockCountTokensRequest` only. The generic
+plain-text `calc_tokens(input_data="...", model_ref="...", provider_id="bedrock", ...)`
+path is intentionally not supported because Bedrock token counting depends on
+the provider-native request shape.
+
+```python
+from kentokit import BedrockCountTokensRequest, TokenCount, calc_tokens
+
+request = BedrockCountTokensRequest(
+    model="anthropic.claude-3-5-haiku-20241022-v1:0",
+    region="us-west-2",
+    converse={
+        "messages": [
+            {
+                "role": "user",
+                "content": [{"text": "Count my tokens."}],
+            }
+        ]
+    },
+)
+
+typed_token_count = TokenCount.from_bedrock(
+    model="anthropic.claude-3-5-haiku-20241022-v1:0",
+    region="us-west-2",
+    api_key="example-api-key",  # pragma: allowlist secret
+    converse={
+        "messages": [
+            {
+                "role": "user",
+                "content": [{"text": "Count my tokens."}],
+            }
+        ]
+    },
+)
+
+overloaded_token_count = calc_tokens(
+    input_data=request,
+    provider_id="bedrock",
     api_key="example-api-key",  # pragma: allowlist secret
 )
 
@@ -239,6 +295,7 @@ assert typed_token_count.total == overloaded_token_count.total
 
 Additional Gemini multimodal examples are available in:
 
+- `examples/bedrock/count_tokens.py`
 - `examples/gemini/count_tokens.py`
 - `examples/gemini/count_tokens_inline_image.py`
 - `examples/gemini/count_tokens_video.py`
