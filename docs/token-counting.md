@@ -240,6 +240,13 @@ overloaded_token_count = calc_tokens(
 assert typed_token_count.total == overloaded_token_count.total
 ```
 
+Additional Gemini multimodal examples are available in:
+
+- `examples/gemini/count_tokens.py`
+- `examples/gemini/count_tokens_inline_image.py`
+- `examples/gemini/count_tokens_video.py`
+- `examples/gemini/count_tokens_pdf.py`
+
 ## xAI Typed Request
 
 ```python
