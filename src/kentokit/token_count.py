@@ -3,6 +3,7 @@
 import typing as t
 from dataclasses import dataclass
 
+from kentokit.modalities import GeminiModality
 from kentokit.providers.anthropic import AnthropicProvider
 from kentokit.providers.gemini import GeminiProvider
 from kentokit.providers.openai import OpenAIProvider
@@ -23,16 +24,16 @@ class TokenCount:
         Total token count reported by the provider.
     cached_tokens : int | None, default=None
         Gemini cached token count when the provider returns it.
-    token_details : list[dict[str, Any]] | None, default=None
+    token_details : dict[GeminiModality, int] | None, default=None
         Gemini modality breakdown for prompt-side tokens.
-    cache_token_details : list[dict[str, Any]] | None, default=None
+    cache_token_details : dict[GeminiModality, int] | None, default=None
         Gemini modality breakdown for cached tokens.
     """
 
     total: int
     cached_tokens: int | None = None
-    token_details: list[dict[str, t.Any]] | None = None
-    cache_token_details: list[dict[str, t.Any]] | None = None
+    token_details: dict[GeminiModality, int] | None = None
+    cache_token_details: dict[GeminiModality, int] | None = None
 
     @classmethod
     def from_anthropic(

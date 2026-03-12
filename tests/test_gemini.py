@@ -122,12 +122,8 @@ def test_token_count_from_gemini_uses_request_model(
         return TokenCount(
             total=17,
             cached_tokens=5,
-            token_details=[
-                {"modality": GeminiModality.TEXT, "tokenCount": 12},
-            ],
-            cache_token_details=[
-                {"modality": GeminiModality.TEXT, "tokenCount": 5},
-            ],
+            token_details={GeminiModality.TEXT: 12},
+            cache_token_details={GeminiModality.TEXT: 5},
         )
 
     monkeypatch.setattr(GeminiProvider, "count_token_count", fake_count_token_count)
@@ -141,10 +137,6 @@ def test_token_count_from_gemini_uses_request_model(
     assert token_count == TokenCount(
         total=17,
         cached_tokens=5,
-        token_details=[
-            {"modality": GeminiModality.TEXT, "tokenCount": 12},
-        ],
-        cache_token_details=[
-            {"modality": GeminiModality.TEXT, "tokenCount": 5},
-        ],
+        token_details={GeminiModality.TEXT: 12},
+        cache_token_details={GeminiModality.TEXT: 5},
     )

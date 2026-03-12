@@ -417,12 +417,8 @@ class DummyGeminiProvider(ProviderBase):
         return TokenCount(
             total=24,
             cached_tokens=6,
-            token_details=[
-                {"modality": GeminiModality.TEXT, "tokenCount": 18},
-            ],
-            cache_token_details=[
-                {"modality": GeminiModality.TEXT, "tokenCount": 6},
-            ],
+            token_details={GeminiModality.TEXT: 18},
+            cache_token_details={GeminiModality.TEXT: 6},
         )
 
 
@@ -617,12 +613,8 @@ def test_calc_tokens_accepts_gemini_request(
     assert token_count == TokenCount(
         total=24,
         cached_tokens=6,
-        token_details=[
-            {"modality": GeminiModality.TEXT, "tokenCount": 18},
-        ],
-        cache_token_details=[
-            {"modality": GeminiModality.TEXT, "tokenCount": 6},
-        ],
+        token_details={GeminiModality.TEXT: 18},
+        cache_token_details={GeminiModality.TEXT: 6},
     )
 
 
@@ -647,12 +639,8 @@ def test_calc_tokens_returns_full_gemini_token_count(
     assert token_count == TokenCount(
         total=24,
         cached_tokens=6,
-        token_details=[
-            {"modality": GeminiModality.TEXT, "tokenCount": 18},
-        ],
-        cache_token_details=[
-            {"modality": GeminiModality.TEXT, "tokenCount": 6},
-        ],
+        token_details={GeminiModality.TEXT: 18},
+        cache_token_details={GeminiModality.TEXT: 6},
     )
 
 

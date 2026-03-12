@@ -129,10 +129,7 @@ Gemini responses can also populate Gemini-specific metadata on `TokenCount`:
 - `token_details`: prompt-side modality breakdown
 - `cache_token_details`: cache-side modality breakdown
 
-Each breakdown item is a dictionary with:
-
-- `modality`: a `GeminiModality` value
-- `tokenCount`: the integer count for that modality
+Each breakdown is a dictionary from `GeminiModality` to `int`.
 
 Example:
 
@@ -142,17 +139,17 @@ from kentokit import GeminiModality, TokenCount
 token_count = TokenCount(
     total=17,
     cached_tokens=5,
-    token_details=[
-        {"modality": GeminiModality.TEXT, "tokenCount": 12},
-        {"modality": GeminiModality.IMAGE, "tokenCount": 5},
-    ],
-    cache_token_details=[
-        {"modality": GeminiModality.TEXT, "tokenCount": 5},
-    ],
+    token_details={
+        GeminiModality.TEXT: 12,
+        GeminiModality.IMAGE: 5,
+    },
+    cache_token_details={
+        GeminiModality.TEXT: 5,
+    },
 )
 
 assert token_count.cached_tokens == 5
-assert token_count.token_details[0]["modality"] == GeminiModality.TEXT
+assert token_count.token_details[GeminiModality.TEXT] == 12
 ```
 
 ## OpenAI Typed Request

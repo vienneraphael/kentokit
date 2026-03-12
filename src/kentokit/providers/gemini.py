@@ -361,7 +361,7 @@ class GeminiProvider(ProviderBase):
         *,
         data: dict[str, t.Any],
         field_name: str,
-    ) -> list[dict[str, t.Any]] | None:
+    ) -> dict[GeminiModality, int] | None:
         """Parse an optional Gemini modality breakdown field.
 
         Parameters
@@ -373,7 +373,7 @@ class GeminiProvider(ProviderBase):
 
         Returns
         -------
-        list[dict[str, Any]] | None
+        dict[GeminiModality, int] | None
             Validated Gemini modality breakdown, when present.
         """
 
@@ -386,7 +386,7 @@ class GeminiProvider(ProviderBase):
                 message=f"expected list field '{field_name}'",
             )
 
-        parsed_details: list[dict[str, t.Any]] = []
+        parsed_details: dict[GeminiModality, int] = {}
         for index, raw_detail in enumerate(raw_value):
             if not isinstance(raw_detail, dict):
                 raise TokenCountError(
@@ -412,13 +412,13 @@ class GeminiProvider(ProviderBase):
                     provider_id=self.provider_id,
                     message=f"expected integer field '{field_name}[{index}].tokenCount'",
                 )
+            if parsed_modality in parsed_details:
+                raise TokenCountError(
+                    provider_id=self.provider_id,
+                    message=(f"expected unique modality in '{field_name}[{index}].modality'"),
+                )
 
-            parsed_details.append(
-                {
-                    "modality": parsed_modality,
-                    "tokenCount": token_count,
-                }
-            )
+            parsed_details[parsed_modality] = token_count
 
         return parsed_details
 

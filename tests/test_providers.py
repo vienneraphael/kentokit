@@ -361,13 +361,11 @@ def test_gemini_count_token_count_returns_full_metadata() -> None:
     assert token_count == TokenCount(
         total=17,
         cached_tokens=5,
-        token_details=[
-            {"modality": GeminiModality.TEXT, "tokenCount": 12},
-            {"modality": GeminiModality.IMAGE, "tokenCount": 5},
-        ],
-        cache_token_details=[
-            {"modality": GeminiModality.TEXT, "tokenCount": 5},
-        ],
+        token_details={
+            GeminiModality.TEXT: 12,
+            GeminiModality.IMAGE: 5,
+        },
+        cache_token_details={GeminiModality.TEXT: 5},
     )
 
 
@@ -425,6 +423,16 @@ def test_gemini_request_object_rejects_mixed_arguments() -> None:
                 "promptTokensDetails": [{"modality": "TEXT"}],
             },
             "promptTokensDetails[0].tokenCount",
+        ),
+        (
+            {
+                "totalTokens": 7,
+                "promptTokensDetails": [
+                    {"modality": "TEXT", "tokenCount": 3},
+                    {"modality": "TEXT", "tokenCount": 4},
+                ],
+            },
+            "promptTokensDetails[1].modality",
         ),
     ],
 )
