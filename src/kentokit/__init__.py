@@ -8,6 +8,7 @@ from kentokit.providers.base import (
     UnsupportedProviderError,
 )
 from kentokit.requests.anthropic import AnthropicCountTokensRequest
+from kentokit.requests.bedrock import BedrockCountTokensRequest
 from kentokit.requests.gemini import GeminiCountTokensRequest
 from kentokit.requests.openai import OpenAICountTokensRequest
 from kentokit.requests.xai import XAICountTokensRequest
@@ -15,6 +16,7 @@ from kentokit.token_count import TokenCount
 
 __all__ = [
     "AnthropicCountTokensRequest",
+    "BedrockCountTokensRequest",
     "GeminiCountTokensRequest",
     "GeminiModality",
     "ProviderId",

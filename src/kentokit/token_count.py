@@ -5,10 +5,12 @@ from dataclasses import dataclass
 
 from kentokit.modalities import GeminiModality
 from kentokit.providers.anthropic import AnthropicProvider
+from kentokit.providers.bedrock import BedrockProvider
 from kentokit.providers.gemini import GeminiProvider
 from kentokit.providers.openai import OpenAIProvider
 from kentokit.providers.xai import XAIProvider
 from kentokit.requests.anthropic import AnthropicCountTokensRequest
+from kentokit.requests.bedrock import BedrockCountTokensRequest
 from kentokit.requests.gemini import GeminiCountTokensRequest
 from kentokit.requests.openai import OpenAICountTokensRequest
 from kentokit.requests.xai import XAICountTokensRequest
@@ -146,6 +148,48 @@ class TokenCount:
             truncation=truncation,
         )
         provider = OpenAIProvider(api_key=api_key)
+        total = provider.count_tokens(request=request)
+        return cls(total=total)
+
+    @classmethod
+    def from_bedrock(
+        cls,
+        *,
+        model: str,
+        region: str,
+        api_key: str,
+        converse: dict[str, t.Any] | None = None,
+        invoke_model_body: str | dict[str, t.Any] | None = None,
+    ) -> t.Self:
+        """Count Bedrock input tokens from a validated request shape.
+
+        Parameters
+        ----------
+        model : str
+            Bedrock model identifier.
+        region : str
+            AWS region for the Bedrock Runtime endpoint.
+        api_key : str
+            Bedrock API key used for the provider transport.
+        converse : dict[str, Any] | None, default=None
+            Optional Bedrock ``converse`` payload.
+        invoke_model_body : str | dict[str, Any] | None, default=None
+            Optional JSON string or JSON-compatible dictionary used for the
+            ``invokeModel`` payload.
+
+        Returns
+        -------
+        Self
+            Normalized token count returned by the Bedrock provider.
+        """
+
+        request = BedrockCountTokensRequest(
+            model=model,
+            region=region,
+            converse=converse,
+            invoke_model_body=invoke_model_body,
+        )
+        provider = BedrockProvider(api_key=api_key)
         total = provider.count_tokens(request=request)
         return cls(total=total)
 

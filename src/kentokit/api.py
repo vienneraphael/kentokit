@@ -5,10 +5,12 @@ import typing as t
 from kentokit.providers import PROVIDER_REGISTRY
 from kentokit.providers.anthropic import AnthropicProvider
 from kentokit.providers.base import ProviderBase, ProviderId, UnsupportedProviderError
+from kentokit.providers.bedrock import BedrockProvider
 from kentokit.providers.gemini import GeminiProvider
 from kentokit.providers.openai import OpenAIProvider
 from kentokit.providers.xai import XAIProvider
 from kentokit.requests.anthropic import AnthropicCountTokensRequest
+from kentokit.requests.bedrock import BedrockCountTokensRequest
 from kentokit.requests.gemini import GeminiCountTokensRequest
 from kentokit.requests.openai import OpenAICountTokensRequest
 from kentokit.requests.xai import XAICountTokensRequest
@@ -58,9 +60,19 @@ def calc_tokens(
 @t.overload
 def calc_tokens(
     *,
+    input_data: BedrockCountTokensRequest,
+    provider_id: t.Literal["bedrock"],
+    api_key: str,
+    model_ref: None = None,
+) -> TokenCount: ...
+
+
+@t.overload
+def calc_tokens(
+    *,
     input_data: str,
     model_ref: str,
-    provider_id: ProviderId,
+    provider_id: t.Literal["anthropic", "gemini", "openai", "xai"],
     api_key: str,
 ) -> TokenCount: ...
 
@@ -70,6 +82,7 @@ def calc_tokens(
     input_data: (
         str
         | AnthropicCountTokensRequest
+        | BedrockCountTokensRequest
         | GeminiCountTokensRequest
         | OpenAICountTokensRequest
         | XAICountTokensRequest
@@ -82,10 +95,11 @@ def calc_tokens(
 
     Parameters
     ----------
-    input_data : str | AnthropicCountTokensRequest | GeminiCountTokensRequest | OpenAICountTokensRequest | XAICountTokensRequest
-        Plain text input for any provider, or a validated provider-native request
-        payload for Anthropic, Gemini, OpenAI, or xAI when ``provider_id`` matches
-        that request type.
+    input_data : str | AnthropicCountTokensRequest | BedrockCountTokensRequest | GeminiCountTokensRequest | OpenAICountTokensRequest | XAICountTokensRequest
+        Plain text input for Anthropic, Gemini, OpenAI, or xAI, or a validated
+        provider-native request payload for Anthropic, Bedrock, Gemini, OpenAI,
+        or xAI when
+        ``provider_id`` matches that request type.
     model_ref : str | None, default=None
         Provider-specific model identifier for plain-text requests. Omit when
         ``input_data`` is a provider-native request object.
@@ -141,6 +155,23 @@ def calc_tokens(
         provider = provider_class(api_key=api_key)
         return TokenCount(total=provider.count_tokens(request=input_data))
 
+    if isinstance(input_data, BedrockCountTokensRequest):
+        if provider_id != "bedrock":
+            raise TypeError(
+                "BedrockCountTokensRequest is only supported when provider_id='bedrock'"
+            )
+        if model_ref is not None:
+            raise TypeError(
+                "model_ref cannot be provided when input_data is a BedrockCountTokensRequest"
+            )
+
+        provider_class = t.cast(
+            type[BedrockProvider],
+            _get_provider_class(provider_id=provider_id),
+        )
+        provider = provider_class(api_key=api_key)
+        return TokenCount(total=provider.count_tokens(request=input_data))
+
     if isinstance(input_data, GeminiCountTokensRequest):
         if provider_id != "gemini":
             raise TypeError("GeminiCountTokensRequest is only supported when provider_id='gemini'")
@@ -170,6 +201,11 @@ def calc_tokens(
         )
         provider = provider_class(api_key=api_key)
         return TokenCount(total=provider.count_tokens(request=input_data))
+
+    if provider_id == "bedrock":
+        raise TypeError(
+            "Bedrock requires a BedrockCountTokensRequest; plain string input is not supported"
+        )
 
     if model_ref is None:
         raise TypeError("model_ref must be provided when input_data is a string")

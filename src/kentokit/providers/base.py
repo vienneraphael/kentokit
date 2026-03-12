@@ -7,7 +7,7 @@ import typing as t
 
 import httpx
 
-ProviderId = t.Literal["openai", "anthropic", "gemini", "xai"]
+ProviderId = t.Literal["openai", "anthropic", "gemini", "xai", "bedrock"]
 
 
 class TokenCountError(Exception):

@@ -7,6 +7,7 @@ import pytest
 
 from kentokit import (
     AnthropicCountTokensRequest,
+    BedrockCountTokensRequest,
     GeminiCountTokensRequest,
     GeminiModality,
     OpenAICountTokensRequest,
@@ -422,6 +423,102 @@ class DummyGeminiProvider(ProviderBase):
         )
 
 
+class DummyBedrockProvider(ProviderBase):
+    """Bedrock-specific provider stub for request-object tests."""
+
+    provider_id = "bedrock"
+
+    def build_url(self, *, model_ref: str) -> str:
+        """Build a dummy URL.
+
+        Parameters
+        ----------
+        model_ref : str
+            Provider-specific model identifier.
+
+        Returns
+        -------
+        str
+            Dummy URL.
+        """
+
+        del model_ref
+        return "https://example.com"
+
+    def build_payload(self, *, input_data: str, model_ref: str) -> dict[str, str]:
+        """Build a dummy payload.
+
+        Parameters
+        ----------
+        input_data : str
+            Plain text input to count.
+        model_ref : str
+            Provider-specific model identifier.
+
+        Returns
+        -------
+        dict[str, str]
+            Dummy payload.
+        """
+
+        return {"input": input_data, "model": model_ref}
+
+    def parse_token_count(self, *, data: dict[str, t.Any]) -> int:
+        """Parse a dummy token count response.
+
+        Parameters
+        ----------
+        data : dict[str, Any]
+            Dummy response body.
+
+        Returns
+        -------
+        int
+            Parsed token count.
+        """
+
+        del data
+        return 0
+
+    def count_tokens(
+        self,
+        *,
+        input_data: str | None = None,
+        model_ref: str | None = None,
+        client: httpx.Client | None = None,
+        request: BedrockCountTokensRequest | None = None,
+    ) -> int:
+        """Return a stable token count for Bedrock request-object tests.
+
+        Parameters
+        ----------
+        input_data : str | None, default=None
+            Plain text input, unused by the stub.
+        model_ref : str | None, default=None
+            Model reference, unused by the stub.
+        client : httpx.Client | None, default=None
+            Optional HTTP client, unused by the stub.
+        request : BedrockCountTokensRequest | None, default=None
+            Validated Bedrock request payload.
+
+        Returns
+        -------
+        int
+            Stable token count.
+        """
+
+        del client, input_data, model_ref
+        assert request is not None
+        assert request == BedrockCountTokensRequest(
+            model="anthropic.claude-3-5-haiku-20241022-v1:0",
+            region="us-west-2",
+            converse={
+                "messages": [{"role": "user", "content": [{"text": "hello"}]}],
+            },
+        )
+        return 26
+
+
 class DummyXAIProvider(ProviderBase):
     """xAI-specific provider stub for request-object tests."""
 
@@ -618,6 +715,32 @@ def test_calc_tokens_accepts_gemini_request(
     )
 
 
+def test_calc_tokens_accepts_bedrock_request(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The public API should route Bedrock request objects to the provider."""
+
+    def fake_get_provider_class(*, provider_id: str) -> type[ProviderBase]:
+        del provider_id
+        return DummyBedrockProvider
+
+    monkeypatch.setattr("kentokit.api._get_provider_class", fake_get_provider_class)
+
+    token_count = calc_tokens(
+        input_data=BedrockCountTokensRequest(
+            model="anthropic.claude-3-5-haiku-20241022-v1:0",
+            region="us-west-2",
+            converse={
+                "messages": [{"role": "user", "content": [{"text": "hello"}]}],
+            },
+        ),
+        provider_id="bedrock",
+        api_key="secret",
+    )
+
+    assert token_count == TokenCount(total=26)
+
+
 def test_calc_tokens_returns_full_gemini_token_count(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -717,6 +840,25 @@ def test_calc_tokens_rejects_gemini_request_for_other_providers() -> None:
         )
 
 
+def test_calc_tokens_rejects_bedrock_request_for_other_providers() -> None:
+    """The public API should fail early for incompatible request/provider pairs."""
+
+    calc_tokens_runtime = t.cast(t.Callable[..., TokenCount], calc_tokens)
+
+    with pytest.raises(TypeError, match="provider_id='bedrock'"):
+        calc_tokens_runtime(
+            input_data=BedrockCountTokensRequest(
+                model="anthropic.claude-3-5-haiku-20241022-v1:0",
+                region="us-west-2",
+                converse={
+                    "messages": [{"role": "user", "content": [{"text": "hello"}]}],
+                },
+            ),
+            provider_id="openai",
+            api_key="secret",
+        )
+
+
 def test_calc_tokens_rejects_xai_request_for_other_providers() -> None:
     """The public API should fail early for incompatible request/provider pairs."""
 
@@ -747,6 +889,26 @@ def test_calc_tokens_rejects_model_ref_for_gemini_request() -> None:
         )
 
 
+def test_calc_tokens_rejects_model_ref_for_bedrock_request() -> None:
+    """The public API should reject model_ref with Bedrock request objects."""
+
+    calc_tokens_runtime = t.cast(t.Callable[..., TokenCount], calc_tokens)
+
+    with pytest.raises(TypeError, match="BedrockCountTokensRequest"):
+        calc_tokens_runtime(
+            input_data=BedrockCountTokensRequest(
+                model="anthropic.claude-3-5-haiku-20241022-v1:0",
+                region="us-west-2",
+                converse={
+                    "messages": [{"role": "user", "content": [{"text": "hello"}]}],
+                },
+            ),
+            model_ref="anthropic.claude-3-5-haiku-20241022-v1:0",
+            provider_id="bedrock",
+            api_key="secret",
+        )
+
+
 def test_calc_tokens_rejects_model_ref_for_xai_request() -> None:
     """The public API should reject model_ref with xAI request objects."""
 
@@ -757,6 +919,20 @@ def test_calc_tokens_rejects_model_ref_for_xai_request() -> None:
             input_data=XAICountTokensRequest(model="grok-4-fast", text="hello"),
             model_ref="grok-4-fast",
             provider_id="xai",
+            api_key="secret",
+        )
+
+
+def test_calc_tokens_rejects_plain_text_bedrock_usage() -> None:
+    """The public API should require typed request objects for Bedrock."""
+
+    calc_tokens_runtime = t.cast(t.Callable[..., TokenCount], calc_tokens)
+
+    with pytest.raises(TypeError, match="BedrockCountTokensRequest"):
+        calc_tokens_runtime(
+            input_data="hello",
+            model_ref="anthropic.claude-3-5-haiku-20241022-v1:0",
+            provider_id="bedrock",
             api_key="secret",
         )
 

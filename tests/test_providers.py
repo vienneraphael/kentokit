@@ -12,10 +12,12 @@ import pytest
 from kentokit import GeminiModality, TokenCount
 from kentokit.providers.anthropic import AnthropicProvider
 from kentokit.providers.base import TokenCountError
+from kentokit.providers.bedrock import BedrockProvider
 from kentokit.providers.gemini import GeminiProvider
 from kentokit.providers.openai import OpenAIProvider
 from kentokit.providers.xai import XAIProvider
 from kentokit.requests.anthropic import AnthropicCountTokensRequest
+from kentokit.requests.bedrock import BedrockCountTokensRequest
 from kentokit.requests.gemini import GeminiCountTokensRequest
 from kentokit.requests.openai import OpenAICountTokensRequest
 from kentokit.requests.xai import XAICountTokensRequest
@@ -453,6 +455,151 @@ def test_gemini_count_token_count_rejects_invalid_metadata(
         provider.count_token_count(
             input_data="hello world",
             model_ref="gemini-2.0-flash",
+            client=client,
+        )
+
+    client.close()
+
+
+def test_bedrock_converse_request_shape() -> None:
+    """Bedrock provider should send the expected converse request."""
+
+    captured_request: RequestCapture | None = None
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal captured_request
+        captured_request = _capture_request(request=request)
+        return httpx.Response(status_code=200, json={"inputTokens": 14})
+
+    provider = BedrockProvider(api_key="secret")
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+
+    token_count = provider.count_tokens(
+        request=BedrockCountTokensRequest(
+            model="anthropic.claude-3-5-haiku-20241022-v1:0",
+            region="us-west-2",
+            converse={
+                "messages": [{"role": "user", "content": [{"text": "hello world"}]}],
+            },
+        ),
+        client=client,
+    )
+
+    client.close()
+
+    assert token_count == 14
+    assert captured_request is not None
+    assert captured_request.method == "POST"
+    assert (
+        captured_request.url == "https://bedrock-runtime.us-west-2.amazonaws.com/model/"
+        "anthropic.claude-3-5-haiku-20241022-v1%3A0/count-tokens"
+    )
+    assert captured_request.headers["authorization"] == "Bearer secret"
+    assert captured_request.headers["content-type"] == "application/json"
+    assert captured_request.payload == {
+        "input": {
+            "converse": {
+                "messages": [{"role": "user", "content": [{"text": "hello world"}]}],
+            }
+        }
+    }
+
+
+def test_bedrock_invoke_model_request_shape() -> None:
+    """Bedrock provider should send the expected invokeModel request."""
+
+    captured_request: RequestCapture | None = None
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal captured_request
+        captured_request = _capture_request(request=request)
+        return httpx.Response(status_code=200, json={"inputTokens": 15})
+
+    provider = BedrockProvider(api_key="secret")
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+
+    token_count = provider.count_tokens(
+        request=BedrockCountTokensRequest(
+            model="arn:aws:bedrock:us-west-2:123456789012:inference-profile/test/model",
+            region="us-west-2",
+            invoke_model_body={
+                "anthropic_version": "bedrock-2023-05-31",
+                "messages": [{"role": "user", "content": "hello world"}],
+            },
+        ),
+        client=client,
+    )
+
+    client.close()
+
+    assert token_count == 15
+    assert captured_request is not None
+    assert captured_request.method == "POST"
+    assert (
+        captured_request.url == "https://bedrock-runtime.us-west-2.amazonaws.com/model/"
+        "arn%3Aaws%3Abedrock%3Aus-west-2%3A123456789012%3Ainference-profile%2Ftest%2Fmodel/"
+        "count-tokens"
+    )
+    assert captured_request.headers["authorization"] == "Bearer secret"
+    assert captured_request.headers["content-type"] == "application/json"
+    assert captured_request.payload == {
+        "input": {
+            "invokeModel": {
+                "body": json.dumps(
+                    {
+                        "anthropic_version": "bedrock-2023-05-31",
+                        "messages": [{"role": "user", "content": "hello world"}],
+                    }
+                )
+            }
+        }
+    }
+
+
+def test_bedrock_request_object_rejects_mixed_arguments() -> None:
+    """Bedrock request objects should not be mixed with plain-text arguments."""
+
+    provider = BedrockProvider(api_key="secret")
+    count_tokens_runtime = t.cast(t.Callable[..., int], provider.count_tokens)
+
+    with pytest.raises(TypeError, match="request cannot be combined"):
+        count_tokens_runtime(
+            request=BedrockCountTokensRequest(
+                model="anthropic.claude-3-5-haiku-20241022-v1:0",
+                region="us-west-2",
+                converse={"messages": [{"role": "user", "content": [{"text": "hello world"}]}]},
+            ),
+            input_data="hello world",
+        )
+
+
+@pytest.mark.parametrize(
+    ("response_json", "message"),
+    [
+        ({}, "inputTokens"),
+        ({"inputTokens": "14"}, "inputTokens"),
+    ],
+)
+def test_bedrock_rejects_invalid_count_responses(
+    response_json: dict[str, t.Any],
+    message: str,
+) -> None:
+    """Bedrock should validate the count response shape."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        del request
+        return httpx.Response(status_code=200, json=response_json)
+
+    provider = BedrockProvider(api_key="secret")
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+
+    with pytest.raises(TokenCountError, match=re.escape(message)):
+        provider.count_tokens(
+            request=BedrockCountTokensRequest(
+                model="anthropic.claude-3-5-haiku-20241022-v1:0",
+                region="us-west-2",
+                converse={"messages": [{"role": "user", "content": [{"text": "hello world"}]}]},
+            ),
             client=client,
         )
 
