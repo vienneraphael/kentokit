@@ -7,6 +7,11 @@ import typing as t
 import httpx
 from dotenv import load_dotenv
 
+DOWNLOAD_HEADERS = {
+    "Accept": "*/*",
+    "User-Agent": "kentokit-example/1.0",
+}
+
 
 def load_gemini_api_key() -> str:
     """Load the Gemini API key from the environment.
@@ -43,7 +48,12 @@ def download_media_bytes(*, url: str) -> bytes:
         Downloaded file contents.
     """
 
-    response = httpx.get(url=url, follow_redirects=True, timeout=30.0)
+    response = httpx.get(
+        url=url,
+        follow_redirects=True,
+        headers=DOWNLOAD_HEADERS,
+        timeout=30.0,
+    )
     response.raise_for_status()
     return response.content
 
@@ -65,14 +75,14 @@ def build_inline_media_part(
     Returns
     -------
     dict[str, dict[str, str]]
-        Gemini ``inline_data`` part.
+        Gemini ``inlineData`` part.
     """
 
     media_bytes = download_media_bytes(url=url)
     encoded_bytes = base64.b64encode(media_bytes).decode("ascii")
     return {
-        "inline_data": {
-            "mime_type": mime_type,
+        "inlineData": {
+            "mimeType": mime_type,
             "data": encoded_bytes,
         }
     }

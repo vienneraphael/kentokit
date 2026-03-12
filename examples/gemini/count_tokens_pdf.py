@@ -5,7 +5,7 @@ from _helpers import build_inline_media_part, load_gemini_api_key, print_token_c
 from kentokit import TokenCount
 
 PROMPT = "Give me a summary of this document."
-GEMINI_PAPER_PDF_URL = "https://arxiv.org/pdf/2312.11805"
+SAMPLE_PDF_URL = "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
 
 
 def main() -> None:
@@ -13,7 +13,7 @@ def main() -> None:
 
     api_key = load_gemini_api_key()
     pdf_part = build_inline_media_part(
-        url=GEMINI_PAPER_PDF_URL,
+        url=SAMPLE_PDF_URL,
         mime_type="application/pdf",
     )
     token_count = TokenCount.from_gemini(
